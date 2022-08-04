@@ -22,7 +22,7 @@ class API
 			return;
 		}
 
-		file_put_contents(DEBUG, vsprintf($message, $params), FILE_APPEND);
+		file_put_contents(DEBUG, vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
 	}
 
 	public function queryWithData(string $sql, ...$params) {
@@ -108,7 +108,7 @@ class API
 	public function requireAuth(): void
 	{
 		if (empty($_COOKIE['sessionid'])) {
-			$this->error(403, 'session cookie is required');
+			$this->error(401, 'session cookie is required');
 		}
 
 		@session_start();
