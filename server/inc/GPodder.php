@@ -10,7 +10,11 @@ class GPodder
 		$this->db = $db;
 
 		if (isset($_COOKIE[session_name()])) {
-			@session_start($_POST['token'] ?? null);
+			if ($_GET['token'] && ctype_alnum($_GET['token'])) {
+				session_id($_GET['token']);
+			}
+
+			@session_start();
 
 			if (!empty($_SESSION['user'])) {
 				$this->user = $_SESSION['user'];
@@ -29,7 +33,7 @@ class GPodder
 			return 'Invalid username/password';
 		}
 
-		@session_start($_POST['token'] ?? null);
+		@session_start();
 		$_SESSION['user'] = $this->user = $user;
 
 		if (!empty($_GET['token'])) {
