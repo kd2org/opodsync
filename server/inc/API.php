@@ -206,11 +206,9 @@ class API
 				$this->error(404, 'Not logged in yet, using token: ' . $_POST['token']);
 			}
 
-			$user = $this->db->firstRow('SELECT * FROM users WHERE id = ?;', (int)$_SESSION['user']);
-
 			return [
 				'server' => $this->url(),
-				'loginName' => $user->name,
+				'loginName' => $_SESSION['user']->name,
 				'appPassword' => $_SESSION['app_password'], // FIXME provide a real app-password here
 			];
 		}
