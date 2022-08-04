@@ -43,7 +43,7 @@ class API
 			return;
 		}
 
-		file_put_contents(DEBUG, vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
+		file_put_contents(DEBUG, date('Y-m-d H:i:s ') . vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
 	}
 
 	public function queryWithData(string $sql, ...$params) {
@@ -203,7 +203,7 @@ class API
 			session_start();
 
 			if (empty($_SESSION['user']) || empty($_SESSION['app_password'])) {
-				$this->error(404, 'Not logged in yet');
+				$this->error(404, 'Not logged in yet, using token: ' . $_POST['token']);
 			}
 
 			$user = $this->db->firstRow('SELECT * FROM users WHERE id = ?;', (int)$_SESSION['user']);
