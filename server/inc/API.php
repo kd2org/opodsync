@@ -6,6 +6,7 @@ class API
 	protected ?int $user;
 	protected ?string $section;
 	public ?string $url;
+	public ?string $base_url;
 	protected ?string $path;
 	protected ?string $format = null;
 	protected DB $db;
@@ -14,6 +15,26 @@ class API
 	{
 		session_name('sessionid');
 		$this->db = $db;
+
+		$url = 'http';
+
+		if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443) {
+			$url .= 's';
+		}
+
+		$url .= '://' . $_SERVER['SERVER_NAME'];
+
+		if (!in_array($_SERVER['SERVER_PORT'], [80, 443])) {
+			$url .= ':' . $_SERVER['SERVER_PORT'];
+		}
+
+		$url .= '/';
+		$this->base_url = $url;
+	}
+
+	public function url(string $path = ''): string
+	{
+		return $this->base_url . $path;
 	}
 
 	public function debug(string $message, ...$params)
