@@ -16,6 +16,14 @@ class API
 		$this->db = $db;
 	}
 
+	public function debug(string $message, ...$params)
+	{
+		if (!DEBUG) {
+			return;
+		}
+
+		file_put_contents(DEBUG, vsprintf($message, $params), FILE_APPEND);
+	}
 
 	public function queryWithData(string $sql, ...$params) {
 		$result = $this->db->iterate($sql, ...$params);
@@ -31,6 +39,8 @@ class API
 	}
 
 	public function error(int $code, string $message) {
+		$this->debug('RETURN: %d - %s', $code, $message);
+
 		http_response_code($code);
 		header('Content-Type: application/json', true);
 		echo json_encode(compact('code', 'message'), JSON_PRETTY_PRINT);
@@ -88,6 +98,8 @@ class API
 			$this->error(401, 'Invalid username/password');
 		}
 
+		$this->debug('Logged user: %s', $_SERVER['PHP_AUTH_USER']);
+
 		@session_start();
 		$_SESSION['user'] = $user->id;
 		$this->error(200, 'Logged in!');
@@ -110,6 +122,7 @@ class API
 		}
 
 		$this->user = $_SESSION['user'];
+		$this->debug('Cookie user ID: %s', $this->user);
 		return;
 	}
 
@@ -151,6 +164,8 @@ class API
 			return;
 		}
 
+		$this->debug('Nextcloud compatibility');
+
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
 			$this->error(401, 'No username or password provided');
 		}
@@ -184,6 +199,8 @@ class API
 		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
 		$this->url = strtok(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'), '?');
 
+		$this->debug('Got a %s request on %s', $this->method, $this->url);
+
 		$this->handleNextCloud();
 
 		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data))/!', $this->url, $match)) {
@@ -192,7 +209,6 @@ class API
 
 		$this->section = $match[2] ?? $match[1];
 		$this->path = substr($this->url, strlen($match[0]));
-
 
 		if (preg_match('/\.(json|opml|txt|jsonp|xml)$/', $this->url, $match)) {
 			$this->format = $match[1];
@@ -210,6 +226,8 @@ class API
 		$this->requireAuth();
 
 		$return = $this->route();
+
+		$this->debug('RETURN:' . PHP_EOL . json_encode($return, JSON_PRETTY_PRINT));
 
 		if ($this->format == 'opml') {
 			if ($this->section != 'subscriptions') {
