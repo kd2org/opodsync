@@ -1,0 +1,11 @@
+.ca b { opacity: 0; }
+.ca i { font-style: normal; font-weight: normal; }
+.ca { user-select: none; }
+
+.error, .success {
+	font-size: 1.5em;
+	padding: .5em;
+}
+
+.error { color: red; }
+.success { color: darkgreen; }

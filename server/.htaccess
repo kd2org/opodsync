@@ -1,0 +1,5 @@
+RedirectMatch 404 inc/.*
+Redirect 404 data.sqlite
+Redirect 404 config.local.php
+
+FallbackResource /index.php
