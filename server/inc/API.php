@@ -363,6 +363,7 @@ class API
 			return [
 				'add' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 0 AND changed >= ?;', $this->user, $timestamp),
 				'remove' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 1 AND changed >= ?;', $this->user, $timestamp),
+				'update_urls' => [],
 				'timestamp' => time(),
 			];
 		}
@@ -427,7 +428,7 @@ class API
 			}
 
 			$this->db->exec('END;');
-			return ['timestamp' => $ts];
+			return ['timestamp' => $ts, 'update_urls' => []];
 		}
 	}
 
@@ -493,7 +494,7 @@ class API
 
 		$this->db->exec('END;');
 
-		return compact('timestamp');
+		return compact('timestamp') + ['update_urls' => []];
 	}
 
 	public function opml(array $data): string
