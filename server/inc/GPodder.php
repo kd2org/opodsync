@@ -26,7 +26,6 @@ class GPodder
 		$user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
 
 		if (!password_verify(trim($_POST['password']), $user->password ?? '')) {
-			var_dump($_POST, $user);
 			return 'Invalid username/password';
 		}
 
@@ -36,7 +35,6 @@ class GPodder
 		if (!empty($_GET['token'])) {
 			$_SESSION['app_password'] = sprintf('%s:%s', $_GET['token'], sha1($user->password . $_GET['token']));
 		}
-
 
 		return null;
 	}
