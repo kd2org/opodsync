@@ -5,7 +5,7 @@ class API
 	protected ?string $method;
 	protected ?int $user;
 	protected ?string $section;
-	protected ?string $url;
+	public ?string $url;
 	protected ?string $path;
 	protected ?string $format = null;
 	protected DB $db;
@@ -156,23 +156,67 @@ class API
 
 	// Map NextCloud endpoints to GPodder
 	// see https://github.com/thrillfall/nextcloud-gpodder
-	public function handleNextCloud(): void
+	public function handleNextCloud(): ?array
 	{
+		if ($this->url == 'index.php/login/v2') {
+			$this->requireMethod('POST');
+
+			$id = sha1(random_bytes(16));
+
+			return [
+				'poll' => [
+					'token' => $id,
+					'endpoint' => $this->url('index.php/login/v2/poll'),
+				],
+				'login' => $this->url('login?token=' . $id),
+			];
+		}
+		elseif ($this->url == 'index.php/login/v2/poll') {
+			$this->requireMethod('POST');
+
+			if (empty($_POST['token']) || !ctype_alnum($_POST['token'])) {
+				$this->error(400, 'Invalid token');
+			}
+
+			session_id($_POST['token']);
+			session_start();
+
+			if (empty($_SESSION['user']) || empty($_SESSION['app_password'])) {
+				$this->error(404, 'Not logged in yet');
+			}
+
+			$user = $this->db->firstRow('SELECT * FROM users WHERE id = ?;', (int)$_SESSION['user']);
+
+			return [
+				'server' => $this->url(),
+				'loginName' => $user->name,
+				'appPassword' => $_SESSION['app_password'], // FIXME provide a real app-password here
+			];
+		}
+
 		$nextcloud_path = 'index.php/apps/gpoddersync/';
 
 		if (substr($this->url, 0, strlen($nextcloud_path)) != $nextcloud_path) {
-			return;
+			return null;
 		}
-
-		$this->debug('Nextcloud compatibility');
 
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
 			$this->error(401, 'No username or password provided');
 		}
 
+		$this->debug('Nextcloud compatibility: %s / %s', $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+
 		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
 
-		if (!password_verify($_SERVER['PHP_AUTH_PW'], $user->password ?? '')) {
+		if (!$user) {
+			$this->error(401, 'Invalid username/password');
+		}
+
+		// FIXME store a real app password instead of this hack
+		$token = strtok($_SERVER['PHP_AUTH_PW'], ':');
+		$app_password = sha1($token . $user->password);
+
+		if ($app_password != strtok('')) {
 			$this->error(401, 'Invalid username/password');
 		}
 
@@ -192,6 +236,8 @@ class API
 		else {
 			$this->error(404, 'Undefined Nextcloud API endpoint');
 		}
+
+		return null;
 	}
 
 	public function handleRequest()

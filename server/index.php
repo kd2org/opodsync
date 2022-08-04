@@ -33,6 +33,10 @@ if (!defined('ENABLE_SUBSCRIPTIONS')) {
 	define('ENABLE_SUBSCRIPTIONS', false);
 }
 
+if (!defined('DEBUG')) {
+	define('DEBUG', null);
+}
+
 $db = new DB(__DIR__ . '/data.sqlite');
 $api = new API($db);
 
@@ -41,14 +45,6 @@ if ($api->handleRequest()) {
 }
 
 $gpodder = new GPodder($db);
-
-$login_error = $gpodder->auth();
-
-if (isset($_GET['login']) && !$gpodder->user) {
-	http_response_code(401);
-	header(sprintf('WWW-Authenticate: Basic realm="%s"', 'Please login'));
-	exit;
-}
 
 echo '<!DOCTYPE html>
 <html>
@@ -59,15 +55,32 @@ echo '<!DOCTYPE html>
 
 <body>';
 
-if ($gpodder->user) {
-	printf('<h1>Logged in as %s</h1>', $gpodder->user);
+if ($api->url == 'login') {
+	if ($error = $gpodder->auth()) {
+		printf('<p class="error">%s</p>', htmlspecialchars($error));
+	}
+
+	if ($gpodder->user) {
+		printf('<h1>Logged in as %s</h1>', $gpodder->user->name);
+	}
+	else {
+		echo '
+		<form method="post" action="">
+			<fieldset>
+				<legend>Please login</legend>
+				<dl>
+					<dt>Login</dt>
+					<dd><input type="text" required name="login" /></dd>
+					<dt>Password</dt>
+					<dd><input type="password" required name="password" /></dd>
+				</dl>
+				<p><input type="submit" /></p>
+			</fieldset>
+		</form>';
+	}
 }
 else {
-	echo '<p><a href="?login">Login</a></p>';
-
-	if ($login_error) {
-		printf('<p class="error">%s</p>', htmlspecialchars($login_error));
-	}
+	echo '<p><a href="login">Login</a></p>';
 
 	if ($gpodder->canSubscribe()) {
 		if (!empty($_POST)) {
