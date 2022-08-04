@@ -49,7 +49,7 @@ class API
 
 	public function requireMethod(string $method) {
 		if ($method != $this->method) {
-			$this->error(400, 'Invalid HTTP method: ' . $this->method);
+			$this->error(405, 'Invalid HTTP method: ' . $this->method);
 		}
 	}
 
