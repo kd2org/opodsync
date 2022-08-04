@@ -128,7 +128,7 @@ class API
 
 	public function requireAuth(): void
 	{
-		if (!empty($_SESSION['user'])) {
+		if (isset($this->user)) {
 			return;
 		}
 
@@ -243,7 +243,7 @@ class API
 			$this->error(401, 'Invalid username/password');
 		}
 
-		$_SESSION['user'] = $user->id;
+		$this->user = $_SESSION['user'] = $user->id;
 
 		$path = substr($this->url, strlen($nextcloud_path));
 
