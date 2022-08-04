@@ -228,14 +228,15 @@ class API
 		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
 
 		if (!$user) {
-			$this->error(401, 'Invalid username/password');
+			$this->error(401, 'Invalid username');
 		}
 
 		// FIXME store a real app password instead of this hack
 		$token = strtok($_SERVER['PHP_AUTH_PW'], ':');
-		$app_password = sha1($token . $user->password);
+		$password = strtok('');
+		$app_password = sha1($user->password . $token);
 
-		if ($app_password != strtok('')) {
+		if ($app_password != $password) {
 			$this->error(401, 'Invalid username/password');
 		}
 
