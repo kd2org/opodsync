@@ -3,27 +3,41 @@
 class GPodder
 {
 	protected DB $db;
-	public ?string $user = null;
-	public ?int $user_id = null;
+	public ?\stdClass $user = null;
 
 	public function __construct(DB $db)
 	{
 		$this->db = $db;
+
+		if (isset($_COOKIE[session_name()])) {
+			@session_start();
+
+			if (!empty($_SESSION['user'])) {
+				$this->user = $_SESSION['user'];
+			}
+		}
 	}
 
 	public function auth(): ?string {
-		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
+		if (empty($_POST['login']) || empty($_POST['password'])) {
 			return null;
 		}
 
-		$user = $this->db->firstRow('SELECT id, name, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
+		$user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
 
-		if (!password_verify($_SERVER['PHP_AUTH_PW'], $user->password ?? '')) {
+		if (!password_verify(trim($_POST['password']), $user->password ?? '')) {
+			var_dump($_POST, $user);
 			return 'Invalid username/password';
 		}
 
-		$this->user = $user->name;
-		$this->user_id = $user->id;
+		@session_start();
+		$_SESSION['user'] = $this->user = $user;
+
+		if (!empty($_GET['token'])) {
+			$_SESSION['app_password'] = sprintf('%s:%s', $_GET['token'], sha1($user->password . $_GET['token']));
+		}
+
+
 		return null;
 	}
 
