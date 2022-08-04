@@ -128,6 +128,10 @@ class API
 
 	public function requireAuth(): void
 	{
+		if (!empty($_SESSION['user'])) {
+			return;
+		}
+
 		if (empty($_COOKIE['sessionid'])) {
 			$this->error(401, 'session cookie is required');
 		}
@@ -144,7 +148,6 @@ class API
 
 		$this->user = $_SESSION['user'];
 		$this->debug('Cookie user ID: %s', $this->user);
-		return;
 	}
 
 	public function route()
