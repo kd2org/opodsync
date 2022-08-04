@@ -248,7 +248,7 @@ class API
 		$path = substr($this->url, strlen($nextcloud_path));
 
 		if ($path == 'subscriptions') {
-			$this->url = 'subscriptions/current.json';
+			$this->url = 'api/2/subscriptions/current/default.json';
 		}
 		elseif ($path == 'subscription_change/create') {
 			$this->url = 'api/2/subscriptions/current/default.json';
