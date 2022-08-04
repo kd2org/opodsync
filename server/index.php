@@ -16,13 +16,14 @@ set_error_handler(function ($severity, $message, $file, $line) {
 });
 
 set_exception_handler(function ($e) {
+	error_log((string)$e);
 	echo '<pre style="background: #fdd; padding: 20px; border: 5px solid darkred; margin: 10px;">';
 	echo $e;
 	echo '</pre>';
 	exit;
 });
 
-error_log(__DIR__ . '/../error.log');
+ini_set('error_log', __DIR__ . '/../error.log');
 
 if (file_exists(__DIR__ . '/config.local.php')) {
 	require __DIR__ . '/config.local.php';
