@@ -268,7 +268,12 @@ class API
 
 		$this->debug('Got a %s request on %s', $this->method, $this->url);
 
-		$this->handleNextCloud();
+		$return = $this->handleNextCloud();
+
+		if ($return) {
+			echo json_encode($return, JSON_PRETTY_PRINT);
+			exit;
+		}
 
 		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data))/!', $this->url, $match)) {
 			return null;
