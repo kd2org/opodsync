@@ -49,7 +49,7 @@ $gpodder = new GPodder($db);
 echo '<!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="style.css" />
+	<link rel="stylesheet" type="text/css" href="simple.min.css" />
 	<title>GPodder</title>
 </head>
 
