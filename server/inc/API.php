@@ -1,5 +1,4 @@
 <?php
-
 class API
 {
 	protected ?string $method;
@@ -512,3 +511,5 @@ class API
 		return $out;
 	}
 }
+
+// vim: foldlevel=1

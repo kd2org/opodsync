@@ -1,5 +1,4 @@
 <?php
-
 require __DIR__ . '/inc/DB.php';
 require __DIR__ . '/inc/API.php';
 require __DIR__ . '/inc/GPodder.php';
@@ -121,3 +120,5 @@ echo '
 </main>
 </body>
 </html>';
+
+// vim: nofoldenable

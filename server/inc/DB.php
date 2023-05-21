@@ -1,5 +1,4 @@
 <?php
-
 class DB extends \SQLite3
 {
 	public function __construct(string $file)
@@ -84,3 +83,5 @@ class DB extends \SQLite3
 		return iterator_to_array($this->iterate($sql, ...$params));
 	}
 }
+
+// vim: foldlevel=1

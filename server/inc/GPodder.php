@@ -1,5 +1,4 @@
 <?php
-
 class GPodder
 {
 	protected DB $db;
@@ -100,3 +99,5 @@ class GPodder
 		return sha1($captcha . __DIR__) == $check;
 	}
 }
+
+// vim: foldlevel=1
