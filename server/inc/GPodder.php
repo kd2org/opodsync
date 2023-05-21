@@ -9,7 +9,7 @@ class GPodder
 		$this->db = $db;
 
 		if (isset($_COOKIE[session_name()]) || !empty($_POST['login'])) {
-			if (@$_GET['token'] && ctype_alnum($_GET['token'])) {
+			if (isset($_GET['token']) && ctype_alnum($_GET['token'])) {
 				session_id($_GET['token']);
 			}
 
