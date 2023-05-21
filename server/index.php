@@ -50,10 +50,13 @@ echo '<!DOCTYPE html>
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="simple.min.css" />
-	<title>GPodder</title>
+	<title>&#181;GPodder server</title>
 </head>
 
 <body>';
+
+echo "\n<header><h2>&#181;GPodder server</h2></header>\n";
+echo "<main>\n";
 
 if ($api->url == 'login') {
 	if ($error = $gpodder->auth()) {
@@ -115,5 +118,6 @@ else {
 }
 
 echo '
+</main>
 </body>
 </html>';
