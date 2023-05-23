@@ -7,3 +7,4 @@ Would be nice:
 In the far future:
 * Provide a nice front-end to the web UI
 * Manage and play podcasts from the web UI
+* Move testing to Makefile

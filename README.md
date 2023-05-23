@@ -12,7 +12,7 @@ If you are not using Apache, make sure to replicate the rules from the `.htacces
 
 ### Docker
 
-Alternatively, just use [vivab0rg/docker-php-nginx](https://github.com/vivab0rg/docker-php-nginx) Docker image and see theincluded `Makefile` task to start a container for this project.
+Alternatively, just use [vivab0rg/docker-php-nginx](https://github.com/vivab0rg/docker-php-nginx) Docker image and see the included `Makefile` task to start a container for this project.
 
 NOTE: mind your permissions for the `server/` directory or the container will no be able to write the `data.sqlite` file.
 
