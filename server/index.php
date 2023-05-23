@@ -48,9 +48,9 @@ $gpodder = new GPodder($db);
 echo '<!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="simple.min.css" />
 	<title>&#181;GPodder server</title>
-	<link rel="shortcut icon" href="/favicon.png">
+	<link rel="stylesheet" type="text/css" href="simple.min.css" />
+	<link rel="shortcut icon" href="/favicon.png" />
 </head>
 
 <body>';
