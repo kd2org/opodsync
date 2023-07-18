@@ -49,7 +49,7 @@ echo '<!DOCTYPE html>
 <html>
 <head>
 	<title>&#181;GPodder server</title>
-	<link rel="stylesheet" type="text/css" href="simple.min.css" />
+	<link rel="stylesheet" type="text/css" href="/simple.min.css" />
 	<link rel="shortcut icon" href="/favicon.png" />
 </head>
 
