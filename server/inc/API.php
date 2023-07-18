@@ -333,7 +333,7 @@ class API
 			}
 
 			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data) VALUES (?, ?, \'{}\');', $this->user, $deviceid);
-			$this->db->simple('UPDATE devices SET data = json_patch(data, ?);', $this->user, $deviceid, json_encode($this->getInput()));
+			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user, $deviceid);
 			$this->error(200, 'Device updated');
 		}
 
@@ -439,7 +439,7 @@ class API
 	public function episodes()
 	{
 		if ($this->method == 'GET') {
-			$since = (int)$_GET['since'];
+			$since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
 
 			return [
 				'timestamp' => time(),
