@@ -65,6 +65,7 @@ Please also note: the username "current" always points to the currently logged-i
 This server has been tested so far with:
 
 * AntennaPod 2.6.1 (both GPodder API and NextCloud API) - Android
+* AntennaPod/3.0.2
 
 Please report if apps work (or not).
 
