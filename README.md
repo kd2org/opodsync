@@ -67,6 +67,27 @@ It doesn't work with:
 * gPodder 3.10.17 - Debian ([bug report](https://github.com/gpodder/gpodder/issues/1358))
 * Clementine 1.4.0rc1 - Debian (not possible to choose the server: [bug report](https://github.com/clementine-player/Clementine/issues/7202))
 
+## Docker
+
+In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding `data.sqlite` file for persistence and setting the hostname, here is an example with docker compose:
+```
+services:
+  gpodder:
+    container_name: gPodder
+    build:
+      context: ./micro-gpodder-server
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ~/docker_files/gpodder/data.sqlite
+        target: /var/www/html/data.sqlite
+    hostname: gpodder.example.org
+    ports:
+      - 80:80
+```
+
+> Caution: at the first run you need to execute without the `volumes` section, then register your user and only after copy the `data.sqlite` file from the container to `~/docker_files/gpodder/` and re-add the deleted section.
+
 ## License
 
 GNU AGPLv3
