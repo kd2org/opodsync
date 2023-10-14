@@ -70,7 +70,7 @@ It doesn't work with:
 ## Docker
 
 In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding `data.sqlite` file for persistence and setting the hostname, here is an example with docker compose:
-```
+```yaml
 services:
   gpodder:
     container_name: gPodder
@@ -80,7 +80,7 @@ services:
     volumes:
       - type: bind
         source: ~/docker_files/gpodder/data.sqlite
-        target: /var/www/html/data.sqlite
+        target: /var/www/html/data.sqlite:Z         # `:Z`` is important
     hostname: gpodder.example.org
     ports:
       - 80:80
