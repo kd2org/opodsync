@@ -18,7 +18,7 @@ class API
 
 		$url = 'http';
 
-		if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443) {
+		if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
 			$url .= 's';
 		}
 
@@ -32,12 +32,27 @@ class API
 		$this->base_url = $url;
 	}
 
+	public function encodeUrl(string $url): string
+	{
+		$parsedUrl = parse_url($url);
+
+		if ($parsedUrl === false) {
+			return $url;
+		}
+
+		$parsedUrl['path'] = isset($parsedUrl['path']) ? implode('/', array_map('rawurlencode', explode('/', $parsedUrl['path']))) : null;
+		$parsedUrl['query'] = isset($parsedUrl['query']) ? rawurlencode($parsedUrl['query']) : null;
+		$parsedUrl['fragment'] = isset($parsedUrl['fragment']) ? rawurlencode($parsedUrl['fragment']) : null;
+
+		return $this->unparseUrl($parsedUrl);
+	}
+
 	public function url(string $path = ''): string
 	{
 		return $this->base_url . $path;
 	}
 
-	public function debug(string $message, ...$params)
+	public function debug(string $message, ...$params): void
 	{
 		if (!DEBUG) {
 			return;
@@ -46,12 +61,12 @@ class API
 		file_put_contents(DEBUG, date('Y-m-d H:i:s ') . vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
 	}
 
-	public function queryWithData(string $sql, ...$params) {
+	public function queryWithData(string $sql, ...$params): array {
 		$result = $this->db->iterate($sql, ...$params);
 		$out = [];
 
 		foreach ($result as $row) {
-			$row = array_merge(json_decode($row->data, true), (array) $row);
+			$row = array_merge(json_decode($row->data, true, 512, JSON_THROW_ON_ERROR), (array) $row);
 			unset($row['data']);
 			$out[] = $row;
 		}
@@ -59,53 +74,67 @@ class API
 		return $out;
 	}
 
-	public function error(int $code, string $message) {
+	/**
+	 * @throws JsonException
+	 */
+	public function error(int $code, string $message): void {
 		$this->debug('RETURN: %d - %s', $code, $message);
 
 		http_response_code($code);
 		header('Content-Type: application/json', true);
-		echo json_encode(compact('code', 'message'), JSON_PRETTY_PRINT);
+		echo json_encode(compact('code', 'message'), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
 		exit;
 	}
 
-	public function requireMethod(string $method) {
-		if ($method != $this->method) {
+	/**
+	 * @throws JsonException
+	 */
+	public function requireMethod(string $method): void {
+		if ($method !== $this->method) {
 			$this->error(405, 'Invalid HTTP method: ' . $this->method);
 		}
 	}
 
-	public function validateURL(string $url) {
-		if (!filter_var($url, FILTER_VALIDATE_URL)) {
-			$this->error(400, 'Invalid URL: ' . $url);
+	/**
+	 * @throws JsonException
+	 */
+	public function validateURL(string $url): void {
+		$encodedUrl = $this->encodeUrl($url);
+		if (!filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
+			$this->error(400, 'Invalid URL: ' . $encodedUrl);
 		}
 	}
 
+	/**
+	 * @throws JsonException
+	 */
 	public function getInput()
 	{
-		if ($this->format == 'txt') {
+		if ($this->format === 'txt') {
 			return array_filter(file('php://input'), 'trim');
 		}
 
 		$input = file_get_contents('php://input');
-		return json_decode($input);
+		return json_decode($input, false, 512, JSON_THROW_ON_ERROR);
 	}
 
 	/**
-	 * https://gpoddernet.readthedocs.io/en/latest/api/reference/auth.html
+	 * @see https://gpoddernet.readthedocs.io/en/latest/api/reference/auth.html
+	 * @throws JsonException
 	 */
 	public function handleAuth(): void
 	{
 		$this->requireMethod('POST');
 
-		$username = strtok($this->path, '/');
+		strtok($this->path, '/');
 		$action = strtok('');
 
-		if ($action == 'logout') {
+		if ($action === 'logout') {
 			$_SESSION = [];
 			session_destroy();
 			$this->error(200, 'Logged out');
 		}
-		elseif ($action != 'login') {
+		elseif ($action !== 'login') {
 			$this->error(404, 'Unknown login action: ' . $action);
 		}
 
@@ -114,6 +143,10 @@ class API
 		}
 
 		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
+
+		if(!$user) {
+			$this->error(401, 'Invalid username');
+		}
 
 		if (!password_verify($_SERVER['PHP_AUTH_PW'], $user->password ?? '')) {
 			$this->error(401, 'Invalid username/password');
@@ -126,6 +159,9 @@ class API
 		$this->error(200, 'Logged in!');
 	}
 
+	/**
+	 * @throws JsonException
+	 */
 	public function requireAuth(): void
 	{
 		if (isset($this->user)) {
@@ -150,6 +186,9 @@ class API
 		$this->debug('Cookie user ID: %s', $this->user);
 	}
 
+	/**
+	 * @throws JsonException
+	 */
 	public function route()
 	{
 		switch ($this->section) {
@@ -178,11 +217,14 @@ class API
 		}
 	}
 
-	// Map NextCloud endpoints to GPodder
-	// see https://github.com/thrillfall/nextcloud-gpodder
+	/**
+	 * Map NextCloud endpoints to GPodder
+	 * @see https://github.com/thrillfall/nextcloud-gpodder
+	 * @throws JsonException
+	 */
 	public function handleNextCloud(): ?array
 	{
-		if ($this->url == 'index.php/login/v2') {
+		if ($this->url === 'index.php/login/v2') {
 			$this->requireMethod('POST');
 
 			$id = sha1(random_bytes(16));
@@ -195,7 +237,8 @@ class API
 				'login' => $this->url('login?token=' . $id),
 			];
 		}
-		elseif ($this->url == 'index.php/login/v2/poll') {
+
+		if ($this->url === 'index.php/login/v2/poll') {
 			$this->requireMethod('POST');
 
 			if (empty($_POST['token']) || !ctype_alnum($_POST['token'])) {
@@ -218,7 +261,7 @@ class API
 
 		$nextcloud_path = 'index.php/apps/gpoddersync/';
 
-		if (substr($this->url, 0, strlen($nextcloud_path)) != $nextcloud_path) {
+		if (!str_starts_with($this->url, $nextcloud_path)) {
 			return null;
 		}
 
@@ -239,7 +282,7 @@ class API
 		$password = strtok('');
 		$app_password = sha1($user->password . $token);
 
-		if ($app_password != $password) {
+		if ($app_password !== $password) {
 			$this->error(401, 'Invalid username/password');
 		}
 
@@ -247,13 +290,13 @@ class API
 
 		$path = substr($this->url, strlen($nextcloud_path));
 
-		if ($path == 'subscriptions') {
+		if ($path === 'subscriptions') {
 			$this->url = 'api/2/subscriptions/current/default.json';
 		}
-		elseif ($path == 'subscription_change/create') {
+		elseif ($path === 'subscription_change/create') {
 			$this->url = 'api/2/subscriptions/current/default.json';
 		}
-		elseif ($path == 'episode_action' || $path == 'episode_action/create') {
+		elseif ($path === 'episode_action' || $path === 'episode_action/create') {
 			$this->url = 'api/2/episodes/current.json';
 		}
 		else {
@@ -263,7 +306,10 @@ class API
 		return null;
 	}
 
-	public function handleRequest()
+	/**
+	 * @throws JsonException
+	 */
+	public function handleRequest(): mixed
 	{
 		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
 		$this->url = strtok(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'), '?');
@@ -273,7 +319,7 @@ class API
 		$return = $this->handleNextCloud();
 
 		if ($return) {
-			echo json_encode($return, JSON_PRETTY_PRINT);
+			echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
 			exit;
 		}
 
@@ -293,7 +339,7 @@ class API
 			$this->error(501, 'output format is not implemented');
 		}
 
-		if ($this->section == 'auth') {
+		if ($this->section === 'auth') {
 			$this->handleAuth();
 		}
 
@@ -303,8 +349,8 @@ class API
 
 		$this->debug('RETURN:' . PHP_EOL . json_encode($return, JSON_PRETTY_PRINT));
 
-		if ($this->format == 'opml') {
-			if ($this->section != 'subscriptions') {
+		if ($this->format === 'opml') {
+			if ($this->section !== 'subscriptions') {
 				$this->error(501, 'output format is not implemented');
 			}
 
@@ -312,21 +358,25 @@ class API
 			echo $this->opml($return);
 		}
 		else {
- 			header('Content-Type: application/json');
- 			if ($return !== null) {
-				echo json_encode($return, JSON_PRETTY_PRINT);
- 			}
+			header('Content-Type: application/json');
+			if ($return !== null) {
+				echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+			}
 		}
 
 		exit;
 	}
 
-	public function devices()
+	/**
+	 * @throws JsonException
+	 */
+	public function devices(): array
 	{
-		if ($this->method == 'GET') {
+		if ($this->method === 'GET') {
 			return $this->queryWithData('SELECT * FROM devices WHERE user = ?;', $this->user);
 		}
-		elseif ($this->method == 'POST') {
+
+		if ($this->method === 'POST') {
 			$deviceid = explode('/', $this->path)[1] ?? null;
 
 			if (!$deviceid || !preg_match('/^[\w.-]+$/', $deviceid)) {
@@ -337,10 +387,13 @@ class API
 			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user, $deviceid);
 			$this->error(200, 'Device updated');
 		}
-
 		$this->error(400, 'Wrong request method');
+		exit;
 	}
 
+	/**
+	 * @throws JsonException
+	 */
 	public function subscriptions()
 	{
 		$v2 = strpos($this->url, 'api/2/') !== false;
@@ -348,7 +401,7 @@ class API
 		// We don't care about deviceid yet (FIXME)
 		$deviceid = explode('/', $this->path)[1] ?? null;
 
-		if ($this->method == 'GET' && !$v2) {
+		if ($this->method === 'GET' && !$v2) {
 			return $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ?;', $this->user);
 		}
 
@@ -357,7 +410,7 @@ class API
 		}
 
 		// Get Subscription Changes
-		if ($v2 && $this->method == 'GET') {
+		if ($v2 && $this->method === 'GET') {
 			$timestamp = (int)($_GET['since'] ?? 0);
 
 			return [
@@ -367,7 +420,8 @@ class API
 				'timestamp' => time(),
 			];
 		}
-		elseif ($this->method == 'PUT') {
+
+		if ($this->method === 'PUT') {
 			$lines = $this->getInput();
 
 			if (!is_array($lines)) {
@@ -378,7 +432,8 @@ class API
 			$st = $this->db->prepare('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (:user, :url, strftime(\'%s\', \'now\'));');
 
 			foreach ($lines as $url) {
-				$this->validateURL($url);
+				$encodedUrl = $this->encodeUrl($url);
+				$this->validateURL($encodedUrl);
 
 				$st->bindValue(':url', $url);
 				$st->bindValue(':user', $this->user);
@@ -390,7 +445,8 @@ class API
 			$this->db->exec('END;');
 			return null;
 		}
-		elseif ($this->method == 'POST') {
+
+		if ($this->method === 'POST') {
 			$input = $this->getInput();
 
 			$this->db->exec('BEGIN;');
@@ -400,8 +456,9 @@ class API
 			if (!empty($input->add) && is_array($input->add)) {
 				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0);');
 
-				foreach ($input->add ?? [] as $url) {
-					$this->validateURL($url);
+				foreach ($input->add as $url) {
+					$encodedUrl = $this->encodeUrl($url);
+					$this->validateURL($encodedUrl);
 
 					$st->bindValue(':url', $url);
 					$st->bindValue(':user', $this->user);
@@ -416,7 +473,8 @@ class API
 				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1);');
 
 				foreach ($input->remove as $url) {
-					$this->validateURL($url);
+					$encodedUrl = $this->encodeUrl($url);
+					$this->validateURL($encodedUrl);
 
 					$st->bindValue(':url', $url);
 					$st->bindValue(':user', $this->user);
@@ -430,16 +488,26 @@ class API
 			$this->db->exec('END;');
 			return ['timestamp' => $ts, 'update_urls' => []];
 		}
+
+		$this->error(501, 'Not implemented yet');
+		exit;
 	}
 
-	public function updates()
+	/**
+	 * @throws JsonException
+	 */
+	public function updates(): mixed
 	{
 		$this->error(501, 'Not implemented yet');
+		exit;
 	}
 
-	public function episodes()
+	/**
+	 * @throws JsonException
+	 */
+	public function episodes(): array
 	{
-		if ($this->method == 'GET') {
+		if ($this->method === 'GET') {
 			$since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
 
 			return [
@@ -470,10 +538,12 @@ class API
 				$this->error(400, 'Missing required key in action');
 			}
 
-			$this->validateURL($action->podcast);
-			$this->validateURL($action->episode);
+			$encodedPodcastUrl = $this->encodeUrl($action->podcast);
+			$encodedEpisodeUrl = $this->encodeUrl($action->episode);
+			$this->validateURL($encodedPodcastUrl);
+			$this->validateURL($encodedEpisodeUrl);
 
-			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user);
+			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $encodedPodcastUrl, $this->user);
 
 			if (!$id) {
 				$this->db->simple('INSERT INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user, $action->podcast, $timestamp);
@@ -482,11 +552,11 @@ class API
 
 			$st->bindValue(':user', $this->user);
 			$st->bindValue(':subscription', $id);
-			$st->bindValue(':url', $action->episode);
+			$st->bindValue(':url', $encodedEpisodeUrl);
 			$st->bindValue(':changed', !empty($action->timestamp) ? strtotime($action->timestamp) : $timestamp);
 			$st->bindValue(':action', strtolower($action->action));
 			unset($action->action, $action->episode, $action->podcast);
-			$st->bindValue(':data', json_encode($action));
+			$st->bindValue(':data', json_encode($action, JSON_THROW_ON_ERROR));
 			$st->execute();
 			$st->reset();
 			$st->clear();
@@ -504,11 +574,27 @@ class API
 
 		foreach ($data as $row) {
 			$out .= PHP_EOL . sprintf('<outline type="rss" xmlUrl="%s" />',
-				htmlspecialchars($row ?? '', ENT_XML1)
-			);
+					htmlspecialchars($row ?? '', ENT_XML1)
+				);
 		}
 
 		$out .= PHP_EOL . '</body></opml>';
 		return $out;
+	}
+
+	private function unparseUrl(array $parsed_url ): string
+	{
+		$p             = array();
+		$p['scheme']   = isset( $parsed_url['scheme'] ) ? $parsed_url['scheme'] . '://' : '';
+		$p['host']     = $parsed_url['host'] ?? '';
+		$p['port']     = isset( $parsed_url['port'] ) ? ':' . $parsed_url['port'] : '';
+		$p['user']     = $parsed_url['user'] ?? '';
+		$p['pass']     = isset( $parsed_url['pass'] ) ? ':' . $parsed_url['pass']  : '';
+		$p['pass']     = ( $p['user'] || $p['pass'] ) ? $p['pass']."@" : '';
+		$p['path']     = $parsed_url['path'] ?? '';
+		$p['query']    = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
+		$p['fragment'] = isset( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
+
+		return $p['scheme'].$p['user'].$p['pass'].$p['host'].$p['port'].$p['path'].$p['query'].$p['fragment'];
 	}
 }
