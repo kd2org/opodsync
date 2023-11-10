@@ -1,12 +1,12 @@
 <?php
 
-require __DIR__ . '/inc/DB.php';
-require __DIR__ . '/inc/API.php';
-require __DIR__ . '/inc/GPodder.php';
+require_once __DIR__ . '/inc/DB.php';
+require_once __DIR__ . '/inc/API.php';
+require_once __DIR__ . '/inc/GPodder.php';
 
 error_reporting(E_ALL);
 
-set_error_handler(function ($severity, $message, $file, $line) {
+set_error_handler(static function ($severity, $message, $file, $line) {
 	if (!(error_reporting() & $severity)) {
 		// Don't report this error (for example @unlink)
 		return;
@@ -40,14 +40,18 @@ if (!defined('DEBUG')) {
 $db = new DB(__DIR__ . '/data.sqlite');
 $api = new API($db);
 
-if ($api->handleRequest()) {
+try {
+	if ($api->handleRequest()) {
+		return;
+	}
+} catch (JsonException $e) {
 	return;
 }
 
 $gpodder = new GPodder($db);
 
 echo '<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<link rel="stylesheet" type="text/css" href="style.css" />
 	<title>GPodder</title>
@@ -55,7 +59,7 @@ echo '<!DOCTYPE html>
 
 <body>';
 
-if ($api->url == 'login') {
+if ($api->url === 'login') {
 	if ($error = $gpodder->auth()) {
 		printf('<p class="error">%s</p>', htmlspecialchars($error));
 	}

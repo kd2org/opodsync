@@ -9,7 +9,7 @@ class GPodder
 	{
 		$this->db = $db;
 
-		if (isset($_COOKIE[session_name()]) || !empty($_POST['login'])) {
+		if (!empty($_POST['login']) || isset($_COOKIE[session_name()])) {
 			if (isset($_GET['token']) && ctype_alnum($_GET['token'])) {
 				session_id($_GET['token']);
 			}
@@ -29,7 +29,7 @@ class GPodder
 
 		$user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
 
-		if (!password_verify(trim($_POST['password']), $user->password ?? '')) {
+		if (!$user || !password_verify(trim($_POST['password']), $user->password ?? '')) {
 			return 'Invalid username/password';
 		}
 
@@ -56,11 +56,11 @@ class GPodder
 	}
 
 	public function subscribe(string $name, string $password): ?string {
-		if (trim($name) === '' || !preg_match('/^\w[\w\d_-]+$/', $name)) {
+		if (trim($name) === '' || !preg_match('/^\w[\w_-]+$/', $name)) {
 			return 'Invalid username. Allowed is: \w[\w\d_-]+';
 		}
 
-		if ($name == 'current') {
+		if ($name === 'current') {
 			return 'This username is locked, please choose another one.';
 		}
 
@@ -78,6 +78,9 @@ class GPodder
 		return null;
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function generateCaptcha(): string
 	{
 		$n = '';
@@ -97,6 +100,6 @@ class GPodder
 	public function checkCaptcha(string $captcha, string $check): bool
 	{
 		$captcha = trim($captcha);
-		return sha1($captcha . __DIR__) == $check;
+		return sha1($captcha . __DIR__) === $check;
 	}
 }
