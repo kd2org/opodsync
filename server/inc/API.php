@@ -6,7 +6,7 @@ class API
 	protected ?int $user;
 	protected ?string $section;
 	public ?string $url;
-	private ?string $base_url;
+	public ?string $base_url;
 	protected ?string $path;
 	protected ?string $format = null;
 	protected DB $db;
@@ -32,19 +32,19 @@ class API
 		$this->base_url = $url;
 	}
 
-	private function encodeUrl(string $url): string
+	public function encodeUrl(string $url): string
 	{
 		return preg_replace_callback('#://([^/]+)/([^?]+)#', static function ($match) {
 			return '://' . $match[1] . '/' . implode('/', array_map('rawurlencode', explode('/', $match[2])));
 		}, $url);
 	}
 
-	private function url(string $path = ''): string
+	public function url(string $path = ''): string
 	{
 		return $this->base_url . $path;
 	}
 
-	private function debug(string $message, ...$params): void
+	public function debug(string $message, ...$params): void
 	{
 		if (!DEBUG) {
 			return;
@@ -53,7 +53,7 @@ class API
 		file_put_contents(DEBUG, date('Y-m-d H:i:s ') . vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
 	}
 
-	private function queryWithData(string $sql, ...$params): array {
+	public function queryWithData(string $sql, ...$params): array {
 		$result = $this->db->iterate($sql, ...$params);
 		$out = [];
 
@@ -69,7 +69,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function error(int $code, string $message): void {
+	public function error(int $code, string $message): void {
 		$this->debug('RETURN: %d - %s', $code, $message);
 
 		http_response_code($code);
@@ -81,7 +81,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function requireMethod(string $method): void {
+	public function requireMethod(string $method): void {
 		if ($method !== $this->method) {
 			$this->error(405, 'Invalid HTTP method: ' . $this->method);
 		}
@@ -90,7 +90,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function validateURL(string $url): void {
+	public function validateURL(string $url): void {
 		$encodedUrl = $this->encodeUrl($url);
 		if (!filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
 			$this->error(400, 'Invalid URL: ' . $encodedUrl);
@@ -100,7 +100,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function getInput()
+	public function getInput()
 	{
 		if ($this->format === 'txt') {
 			return array_filter(file('php://input'), 'trim');
@@ -114,7 +114,7 @@ class API
 	 * @see https://gpoddernet.readthedocs.io/en/latest/api/reference/auth.html
 	 * @throws JsonException
 	 */
-	private function handleAuth(): void
+	public function handleAuth(): void
 	{
 		$this->requireMethod('POST');
 
@@ -154,7 +154,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function requireAuth(): void
+	public function requireAuth(): void
 	{
 		if (isset($this->user)) {
 			return;
@@ -181,7 +181,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function route()
+	public function route()
 	{
 		switch ($this->section) {
 			// Not implemented
@@ -214,7 +214,7 @@ class API
 	 * @see https://github.com/thrillfall/nextcloud-gpodder
 	 * @throws JsonException
 	 */
-	private function handleNextCloud(): ?array
+	public function handleNextCloud(): ?array
 	{
 		if ($this->url === 'index.php/login/v2') {
 			$this->requireMethod('POST');
@@ -362,7 +362,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function devices(): array
+	public function devices(): array
 	{
 		if ($this->method === 'GET') {
 			return $this->queryWithData('SELECT * FROM devices WHERE user = ?;', $this->user);
@@ -386,7 +386,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function subscriptions()
+	public function subscriptions()
 	{
 		$v2 = strpos($this->url, 'api/2/') !== false;
 
@@ -488,7 +488,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function updates(): mixed
+	public function updates(): mixed
 	{
 		$this->error(501, 'Not implemented yet');
 		exit;
@@ -497,7 +497,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	private function episodes(): array
+	public function episodes(): array
 	{
 		if ($this->method === 'GET') {
 			$since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
@@ -559,7 +559,7 @@ class API
 		return compact('timestamp') + ['update_urls' => []];
 	}
 
-	private function opml(array $data): string
+	public function opml(array $data): string
 	{
 		$out = '<?xml version="1.0" encoding="utf-8"?>';
 		$out .= PHP_EOL . '<opml version="1.0"><head><title>My Feeds</title></head><body>';
