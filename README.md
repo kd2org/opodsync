@@ -78,9 +78,7 @@ services:
       context: ./micro-gpodder-server
       dockerfile: Dockerfile
     volumes:
-      - type: bind
-        source: ~/docker_files/gpodder/data.sqlite
-        target: /var/www/html/data.sqlite:Z         # `:Z`` is important
+      - gpodder-db:/var/www/html/
     hostname: gpodder.example.org
     ports:
       - 80:80
