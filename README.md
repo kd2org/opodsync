@@ -82,9 +82,10 @@ services:
     hostname: gpodder.example.org
     ports:
       - 80:80
-```
 
-> Caution: at the first run you need to execute without the `volumes` section, then register your user and only after copy the `data.sqlite` file from the container to `~/docker_files/gpodder/` and re-add the deleted section.
+volumes:
+  gpodder-db:
+```
 
 ## License
 
