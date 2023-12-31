@@ -4,7 +4,7 @@ This is a minimalist GPodder server to self-host your podcast synchronization da
 
 This allows you to keep track of which episodes have been listened to.
 
-Requires PHP 8.0+ and SQLite3 with JSON1 extension.
+Requires PHP 7.4+ and SQLite3 with JSON1 extension.
 
 ## Features
 
@@ -13,6 +13,8 @@ Requires PHP 8.0+ and SQLite3 with JSON1 extension.
 * Compatible with gPodder desktop client
 * Self-registration
 * See subscriptions and history on web interface
+
+In the future, this will target compatibility with the [Open Podcast API](https://openpodcastapi.org) as well when it is released.
 
 ## Screenshots
 
