@@ -270,7 +270,7 @@ class API
 
 		$nextcloud_path = 'index.php/apps/gpoddersync/';
 
-		if (!str_starts_with($this->url, $nextcloud_path)) {
+		if (0 !== strpos($this->url, $nextcloud_path)) {
 			return null;
 		}
 
@@ -318,7 +318,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	public function handleRequest(): mixed
+	public function handleRequest(): void
 	{
 		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
 		$this->url = strtok(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'), '?');
@@ -333,7 +333,7 @@ class API
 		}
 
 		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data))/!', $this->url, $match)) {
-			return null;
+			return;
 		}
 
 		$this->section = $match[2] ?? $match[1];
@@ -374,6 +374,7 @@ class API
 		}
 		else {
 			header('Content-Type: application/json');
+
 			if ($return !== null) {
 				echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
 			}
