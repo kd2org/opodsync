@@ -3,7 +3,7 @@
 class API
 {
 	protected ?string $method;
-	protected ?int $user;
+	protected ?stdClass $user;
 	protected ?string $section;
 	public ?string $url;
 	public ?string $base_url;
@@ -139,7 +139,7 @@ class API
 		$this->debug('Logged user: %s', $_SERVER['PHP_AUTH_USER']);
 
 		@session_start();
-		$_SESSION['user'] = $user->id;
+		$_SESSION['user'] = $user;
 		$this->error(200, 'Logged in!');
 	}
 
@@ -162,12 +162,12 @@ class API
 			$this->error(400, 'Invalid sessionid cookie');
 		}
 
-		if (!$this->db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user'])) {
+		if (!$this->db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
 			$this->error(400, 'User does not exist');
 		}
 
 		$this->user = $_SESSION['user'];
-		$this->debug('Cookie user ID: %s', $this->user);
+		$this->debug('Cookie user ID: %s', $this->user->id);
 	}
 
 	/**
@@ -270,7 +270,7 @@ class API
 			$this->error(401, 'Invalid username/password');
 		}
 
-		$this->user = $_SESSION['user'] = $user->id;
+		$this->user = $_SESSION['user'] = $user;
 
 		$path = substr($this->url, strlen($nextcloud_path));
 
@@ -357,7 +357,7 @@ class API
 	public function devices(): array
 	{
 		if ($this->method === 'GET') {
-			return $this->queryWithData('SELECT * FROM devices WHERE user = ?;', $this->user);
+			return $this->queryWithData('SELECT * FROM devices WHERE user = ?;', $this->user->id);
 		}
 
 		if ($this->method === 'POST') {
@@ -367,8 +367,8 @@ class API
 				$this->error(400, 'Invalid device ID');
 			}
 
-			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data) VALUES (?, ?, \'{}\');', $this->user, $deviceid);
-			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user, $deviceid);
+			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data) VALUES (?, ?, \'{}\');', $this->user->id, $deviceid);
+			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user->id, $deviceid);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -386,7 +386,7 @@ class API
 		$deviceid = explode('/', $this->path)[1] ?? null;
 
 		if ($this->method === 'GET' && !$v2) {
-			return $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ?;', $this->user);
+			return $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ?;', $this->user->id);
 		}
 
 		if (!$deviceid || !preg_match('/^[\w.-]+$/', $deviceid)) {
@@ -398,8 +398,8 @@ class API
 			$timestamp = (int)($_GET['since'] ?? 0);
 
 			return [
-				'add' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 0 AND changed >= ?;', $this->user, $timestamp),
-				'remove' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 1 AND changed >= ?;', $this->user, $timestamp),
+				'add' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 0 AND changed >= ?;', $this->user->id, $timestamp),
+				'remove' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 1 AND changed >= ?;', $this->user->id, $timestamp),
 				'update_urls' => [],
 				'timestamp' => time(),
 			];
@@ -419,7 +419,7 @@ class API
 				$this->validateURL($url);
 
 				$st->bindValue(':url', $url);
-				$st->bindValue(':user', $this->user);
+				$st->bindValue(':user', $this->user->id);
 				$st->execute();
 				$st->reset();
 				$st->clear();
@@ -443,7 +443,7 @@ class API
 					$this->validateURL($url);
 
 					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user);
+					$st->bindValue(':user', $this->user->id);
 					$st->bindValue(':ts', $ts);
 					$st->execute();
 					$st->reset();
@@ -458,7 +458,7 @@ class API
 					$this->validateURL($url);
 
 					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user);
+					$st->bindValue(':user', $this->user->id);
 					$st->bindValue(':ts', $ts);
 					$st->execute();
 					$st->reset();
@@ -497,7 +497,7 @@ class API
 					strftime(\'%Y-%m-%dT%H:%M:%SZ\', e.changed, \'unixepoch\') AS timestamp
 					FROM episodes_actions e
 					INNER JOIN subscriptions s ON s.id = e.subscription
-					WHERE e.user = ? AND e.changed >= ?;', $this->user, $since)
+					WHERE e.user = ? AND e.changed >= ?;', $this->user->id, $since)
 			];
 		}
 
@@ -522,14 +522,14 @@ class API
 			$this->validateURL($action->podcast);
 			$this->validateURL($action->episode);
 
-			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user);
+			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user->id);
 
 			if (!$id) {
-				$this->db->simple('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user, $action->podcast, $timestamp);
+				$this->db->simple('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user->id, $action->podcast, $timestamp);
 				$id = $this->db->lastInsertRowID();
 			}
 
-			$st->bindValue(':user', $this->user);
+			$st->bindValue(':user', $this->user->id);
 			$st->bindValue(':subscription', $id);
 			$st->bindValue(':url', $action->episode);
 			$st->bindValue(':changed', !empty($action->timestamp) ? strtotime($action->timestamp) : $timestamp);
