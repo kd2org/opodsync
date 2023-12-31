@@ -127,6 +127,11 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 }
 elseif ($gpodder->user) {
 	html_head();
+
+	if (isset($_GET['token'])) {
+		echo '<p class="success center">You are logged in, you can close this and go back to the app.</p>';
+	}
+
 	echo '<p class="center"><img src="icon.svg" width="150" /></p>';
 	printf('<h2 class="center">Logged in as %s</h2>', $gpodder->user->name);
 	printf('<h3 class="center">GPodder secret username: %s</h2>', $gpodder->getUserToken());
@@ -140,7 +145,8 @@ elseif ($api->url === 'login') {
 	$error = $gpodder->login();
 
 	if ($gpodder->isLogged()) {
-		header('Location: ./');
+		$token = isset($_GET['token']) ? '?token=yes' : '';
+		header('Location: ./' . $token);
 		exit;
 	}
 
@@ -148,6 +154,10 @@ elseif ($api->url === 'login') {
 
 	if ($error) {
 		printf('<p class="error center">%s</p>', htmlspecialchars($error));
+	}
+
+	if (isset($_GET['token'])) {
+		printf('<p class="center">An app is asking to access your account.</p>');
 	}
 
 	echo '
