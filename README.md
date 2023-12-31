@@ -16,7 +16,7 @@ Requires PHP 8.0+ and SQLite3 with JSON1 extension.
 
 ## Screenshots
 
-![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/016b835d-2afe-47ef-86f0-dd8acc51aa89 | width=300) ![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc | width=300)
+<img src="https://github.com/bohwaz/micro-gpodder-server/assets/584819/016b835d-2afe-47ef-86f0-dd8acc51aa89" width=300 /> <img src="https://github.com/bohwaz/micro-gpodder-server/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc" width=300 />
 
 ## Installation
 
