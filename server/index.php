@@ -145,7 +145,7 @@ elseif ($api->url === 'login') {
 	$error = $gpodder->login();
 
 	if ($gpodder->isLogged()) {
-		$token = isset($_GET['token']) ? '?token=yes' : '';
+		$token = isset($_GET['token']) ? '?token=' . time() : '';
 		header('Location: ./' . $token);
 		exit;
 	}
