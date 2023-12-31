@@ -128,7 +128,7 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 elseif ($gpodder->user) {
 	html_head();
 
-	if (isset($_GET['token'])) {
+	if (isset($_GET['oktoken'])) {
 		echo '<p class="success center">You are logged in, you can close this and go back to the app.</p>';
 	}
 
@@ -145,7 +145,7 @@ elseif ($api->url === 'login') {
 	$error = $gpodder->login();
 
 	if ($gpodder->isLogged()) {
-		$token = isset($_GET['token']) ? '?token=' . time() : '';
+		$token = isset($_GET['token']) ? '?oktoken' : '';
 		header('Location: ./' . $token);
 		exit;
 	}
