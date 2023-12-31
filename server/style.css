@@ -7,7 +7,7 @@ body {
 
 body > h1 {
 	background: linear-gradient(to bottom, #005c97, #363795);
-	padding: 2rem;
+	padding: .5em;
 	text-align: center;
 	color: #fff;
 	font-size: 4rem;
@@ -61,7 +61,7 @@ main {
 	background: #fff;
 	border-radius: 1em;
 	padding: 2em;
-	max-width: 40em;
+	max-width: 50em;
 	margin: 2rem auto;
 }
 
@@ -169,7 +169,7 @@ table tbody tr:nth-child(even) {
 }
 
 table th, table td {
-	text-align: center;
+	text-align: left;
 	padding: .5em;
 }
 
@@ -180,4 +180,31 @@ table thead {
 
 table progress[value] {
 	height: 10px;
+}
+
+table a {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 50vw;
+	display: block;
+}
+
+
+@media screen and (max-width: 900px) {
+	body > h1 {
+		font-size: 2rem;
+	}
+
+	main {
+		border-radius: 0;
+		margin-top: 0;
+		padding: 1em .5em;
+		font-size: .9em;
+	}
+
+	h2.myfiles {
+		float: none;
+		margin: 1em 0;
+		text-align: center;
+	}
 }
