@@ -148,3 +148,36 @@ progress[value]::-webkit-progress-value {
 .center a {
 	margin: 0 .5em;
 }
+
+h1 img {
+	width: 70px;
+	vertical-align: middle;
+}
+
+main h1, main h2, main p {
+	margin: .8em 0;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1em 0;
+}
+
+table tbody tr:nth-child(even) {
+	background: #eee;
+}
+
+table th, table td {
+	text-align: center;
+	padding: .5em;
+}
+
+table thead {
+	background: #333;
+	color: #fff;
+}
+
+table progress[value] {
+	height: 10px;
+}
