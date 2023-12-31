@@ -32,21 +32,6 @@ class API
 		$this->base_url = $url;
 	}
 
-	public function encodeUrl(string $url): string
-	{
-		$parsedUrl = parse_url($url);
-
-		if ($parsedUrl === false) {
-			return $url;
-		}
-
-		$parsedUrl['path'] = isset($parsedUrl['path']) ? implode('/', array_map('rawurlencode', explode('/', $parsedUrl['path']))) : null;
-		$parsedUrl['query'] = isset($parsedUrl['query']) ? rawurlencode($parsedUrl['query']) : null;
-		$parsedUrl['fragment'] = isset($parsedUrl['fragment']) ? rawurlencode($parsedUrl['fragment']) : null;
-
-		return $this->unparseUrl($parsedUrl);
-	}
-
 	public function url(string $path = ''): string
 	{
 		return $this->base_url . $path;
@@ -99,9 +84,8 @@ class API
 	 * @throws JsonException
 	 */
 	public function validateURL(string $url): void {
-		$encodedUrl = $this->encodeUrl($url);
-		if (!filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
-			$this->error(400, 'Invalid URL: ' . $encodedUrl);
+		if (!preg_match('!^https?://[^/]+/', $url)) {
+			$this->error(400, 'Invalid URL: ' . $url);
 		}
 	}
 
@@ -432,8 +416,7 @@ class API
 			$st = $this->db->prepare('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (:user, :url, strftime(\'%s\', \'now\'));');
 
 			foreach ($lines as $url) {
-				$encodedUrl = $this->encodeUrl($url);
-				$this->validateURL($encodedUrl);
+				$this->validateURL($url);
 
 				$st->bindValue(':url', $url);
 				$st->bindValue(':user', $this->user);
@@ -457,8 +440,7 @@ class API
 				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0);');
 
 				foreach ($input->add as $url) {
-					$encodedUrl = $this->encodeUrl($url);
-					$this->validateURL($encodedUrl);
+					$this->validateURL($url);
 
 					$st->bindValue(':url', $url);
 					$st->bindValue(':user', $this->user);
@@ -473,8 +455,7 @@ class API
 				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1);');
 
 				foreach ($input->remove as $url) {
-					$encodedUrl = $this->encodeUrl($url);
-					$this->validateURL($encodedUrl);
+					$this->validateURL($url);
 
 					$st->bindValue(':url', $url);
 					$st->bindValue(':user', $this->user);
@@ -538,21 +519,19 @@ class API
 				$this->error(400, 'Missing required key in action');
 			}
 
-			$encodedPodcastUrl = $this->encodeUrl($action->podcast);
-			$encodedEpisodeUrl = $this->encodeUrl($action->episode);
-			$this->validateURL($encodedPodcastUrl);
-			$this->validateURL($encodedEpisodeUrl);
+			$this->validateURL($action->podcast);
+			$this->validateURL($action->episode);
 
-			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $encodedPodcastUrl, $this->user);
+			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user);
 
 			if (!$id) {
-				$this->db->simple('INSERT INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user, $action->podcast, $timestamp);
+				$this->db->simple('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user, $action->podcast, $timestamp);
 				$id = $this->db->lastInsertRowID();
 			}
 
 			$st->bindValue(':user', $this->user);
 			$st->bindValue(':subscription', $id);
-			$st->bindValue(':url', $encodedEpisodeUrl);
+			$st->bindValue(':url', $action->episode);
 			$st->bindValue(':changed', !empty($action->timestamp) ? strtotime($action->timestamp) : $timestamp);
 			$st->bindValue(':action', strtolower($action->action));
 			unset($action->action, $action->episode, $action->podcast);
@@ -580,21 +559,5 @@ class API
 
 		$out .= PHP_EOL . '</body></opml>';
 		return $out;
-	}
-
-	private function unparseUrl(array $parsed_url ): string
-	{
-		$p             = array();
-		$p['scheme']   = isset( $parsed_url['scheme'] ) ? $parsed_url['scheme'] . '://' : '';
-		$p['host']     = $parsed_url['host'] ?? '';
-		$p['port']     = isset( $parsed_url['port'] ) ? ':' . $parsed_url['port'] : '';
-		$p['user']     = $parsed_url['user'] ?? '';
-		$p['pass']     = isset( $parsed_url['pass'] ) ? ':' . $parsed_url['pass']  : '';
-		$p['pass']     = ( $p['user'] || $p['pass'] ) ? $p['pass']."@" : '';
-		$p['path']     = $parsed_url['path'] ?? '';
-		$p['query']    = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
-		$p['fragment'] = isset( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
-
-		return $p['scheme'].$p['user'].$p['pass'].$p['host'].$p['port'].$p['path'].$p['query'].$p['fragment'];
 	}
 }
