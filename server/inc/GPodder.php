@@ -22,7 +22,8 @@ class GPodder
 		}
 	}
 
-	public function auth(): ?string {
+	public function login(): ?string
+	{
 		if (empty($_POST['login']) || empty($_POST['password'])) {
 			return null;
 		}
@@ -42,8 +43,37 @@ class GPodder
 		return null;
 	}
 
+	public function isLogged(): bool
+	{
+		return !empty($_SESSION['user']);
+	}
 
-	public function canSubscribe(): bool {
+	public function logout(): void
+	{
+		session_destroy();
+	}
+
+	public function getUserToken(): string
+	{
+		return $this->user->name . '__' . substr(sha1($this->user->password), 0, 10);
+	}
+
+	public function validateToken(string $username): bool
+	{
+		$login = strtok($username, '__');
+		$token = strtok('');
+
+		$this->user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', $login);
+
+		if (!$this->user) {
+			return false;
+		}
+
+		return $username === $this->getUserToken();
+	}
+
+	public function canSubscribe(): bool
+	{
 		if (ENABLE_SUBSCRIPTIONS) {
 			return true;
 		}
@@ -55,7 +85,8 @@ class GPodder
 		return false;
 	}
 
-	public function subscribe(string $name, string $password): ?string {
+	public function subscribe(string $name, string $password): ?string
+	{
 		if (trim($name) === '' || !preg_match('/^\w[\w_-]+$/', $name)) {
 			return 'Invalid username. Allowed is: \w[\w\d_-]+';
 		}
@@ -101,5 +132,27 @@ class GPodder
 	{
 		$captcha = trim($captcha);
 		return sha1($captcha . __DIR__) === $check;
+	}
+
+	public function countActiveSubscriptions(): int
+	{
+		return $this->db->firstColumn('SELECT COUNT(*) FROM subscriptions WHERE user = ? AND deleted = 0;', $this->user->id);
+	}
+
+	public function listActiveSubscriptions(): array
+	{
+		return $this->db->all('SELECT s.*, COUNT(*) AS count
+			FROM subscriptions s LEFT JOIN episodes_actions a ON a.subscription = s.id
+			WHERE s.user = ? AND s.deleted = 0
+			GROUP BY s.id ORDER BY s.changed DESC;', $this->user->id);
+	}
+
+	public function listActions(int $subscription): array
+	{
+		return $this->db->all('SELECT *, json_extract(data, \'$.device\') AS device,
+			json_extract(data, \'$.timestamp\') AS timestamp
+			FROM episodes_actions
+			WHERE user = ? AND subscription = ?
+			ORDER BY changed DESC;', $this->user->id, $subscription);
 	}
 }

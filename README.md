@@ -1,10 +1,22 @@
 # Micro GPodder server
 
-![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/4620af05-0799-4c52-b1a4-b801865d158a) ![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc)
+This is a minimalist GPodder server to self-host your podcast synchronization data.
 
-This is a minimalist GPodder server to self-host your podcast data.
+This allows you to keep track of which episodes have been listened to.
 
 Requires PHP 8.0+ and SQLite3 with JSON1 extension.
+
+## Features
+
+* Stores history of subscriptions and episodes (plays, downloads, etc.)
+* Sync between devices
+* Compatible with gPodder desktop client
+* Self-registration
+* See subscriptions and history on web interface
+
+## Screenshots
+
+![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/4620af05-0799-4c52-b1a4-b801865d158a) ![image](https://github.com/bohwaz/micro-gpodder-server/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc)
 
 ## Installation
 
@@ -12,23 +24,65 @@ Just copy the files from the `server` directory into a new directory of your web
 
 If you are not using Apache, make sure to replicate the rules from the `.htaccess` file to your own server.
 
-## Configuring your podcast client
-
-Just use the domain name where you installed the server, and the login and password you have chosen.
-
-## Accounts
+### First account
 
 When installed, the server will allow to create a first account. Just go to the server URL and you will be able to create an account and login.
 
 After that first account, account creation is disabled by default.
 
-If you want to allow more accounts, you'll have to create a file named `config.local.php` containing this:
+If you want to allow more accounts, you'll have to configure the server (see "Configuration" below).
+
+### Docker
+
+In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname, here is an example with docker compose:
+
+```yaml
+services:
+  gpodder:
+    container_name: gPodder
+    build:
+      context: ./micro-gpodder-server
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ~/docker_files/gpodder/data
+        target: /var/www/server/data
+    hostname: gpodder.example.org
+    ports:
+      - 80:80
+```
+
+### Configuration
+
+You can create a `config.local.php` in the `data` directory, defining configuration constants:
 
 ```
 <?php
 
+// Enable or disable subscriptions (boolean)
+// By default the server allows to create one account
+// and then disables subscriptions
 const ENABLE_SUBSCRIPTIONS = true;
+
+// Set to a file path to enable the debug log
+// Set to NULL (default) to disable the debug log
+const DEBUG = __DIR__ . '/debug.log';
+
+// Set to change the instance name
+const TITLE = 'My awesome GPodder server';
 ```
+
+## Configuring your podcast client
+
+Just use the domain name where you installed the server, and the login and password you have chosen.
+
+### gPodder (desktop client)
+
+gPodder (the [desktop client](https://gpodder.github.io), not the gpodder.net service) doesn't support any kind of authentication (!!), see this [bug report](https://github.com/gpodder/gpodder/issues/1358) for details.
+
+This means that you have to use a unique secret token as the username.
+
+This token is displayed when you log in. Use it as the username in gPodder configuration.
 
 ## APIs
 
@@ -61,34 +115,13 @@ Please also note: the username "current" always points to the currently logged-i
 This server has been tested so far with:
 
 * AntennaPod 2.6.1 (both GPodder API and NextCloud API) - Android
+* gPodder 3.10.17 - Debian (requires a specific token, see above!)
 
-Please report if apps work (or not).
+Please report if apps work (or not) with other clients.
 
 It doesn't work with:
 
-* gPodder 3.10.17 - Debian ([bug report](https://github.com/gpodder/gpodder/issues/1358))
 * Clementine 1.4.0rc1 - Debian (not possible to choose the server: [bug report](https://github.com/clementine-player/Clementine/issues/7202))
-
-## Docker
-
-In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding `data.sqlite` file for persistence and setting the hostname, here is an example with docker compose:
-```yaml
-services:
-  gpodder:
-    container_name: gPodder
-    build:
-      context: ./micro-gpodder-server
-      dockerfile: Dockerfile
-    volumes:
-      - type: bind
-        source: ~/docker_files/gpodder/data.sqlite
-        target: /var/www/html/data.sqlite:Z         # `:Z`` is important
-    hostname: gpodder.example.org
-    ports:
-      - 80:80
-```
-
-> Caution: at the first run you need to execute without the `volumes` section, then register your user and only after copy the `data.sqlite` file from the container to `~/docker_files/gpodder/` and re-add the deleted section.
 
 ## License
 

@@ -84,7 +84,7 @@ class API
 	 * @throws JsonException
 	 */
 	public function validateURL(string $url): void {
-		if (!preg_match('!^https?://[^/]+/', $url)) {
+		if (!preg_match('!^https?://[^/]+/!', $url)) {
 			$this->error(400, 'Invalid URL: ' . $url);
 		}
 	}
@@ -126,7 +126,16 @@ class API
 			$this->error(401, 'No username or password provided');
 		}
 
-		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
+		$this->error(200, 'Logged in!');
+	}
+
+	public function login()
+	{
+		$login = $_SERVER['PHP_AUTH_USER'];
+		$login = strtok('__');
+		strtok('');
+
+		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $login);
 
 		if(!$user) {
 			$this->error(401, 'Invalid username');
@@ -136,24 +145,40 @@ class API
 			$this->error(401, 'Invalid username/password');
 		}
 
-		$this->debug('Logged user: %s', $_SERVER['PHP_AUTH_USER']);
+		$this->debug('Logged user: %s', $login);
 
 		@session_start();
 		$_SESSION['user'] = $user;
-		$this->error(200, 'Logged in!');
 	}
 
 	/**
 	 * @throws JsonException
 	 */
-	public function requireAuth(): void
+	public function requireAuth(?string $username): void
 	{
 		if (isset($this->user)) {
 			return;
 		}
 
+		// For gPodder desktop
+		if ($username && false !== strpos($username, '__')) {
+			$gpodder = new GPodder($this->db);
+			if (!$gpodder->validateToken($username)) {
+				$this->error(401, 'Invalid gpodder token');
+			}
+
+			$this->user = $gpodder->user;
+			return;
+		}
+
+		if (empty($_COOKIE['sessionid']) && isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
+			$this->login();
+			$this->user = $_SESSION['user'];
+			return;
+		}
+
 		if (empty($_COOKIE['sessionid'])) {
-			$this->error(401, 'session cookie is required');
+			$this->error(401, 'session cookie is required' . print_r([$_POST, $_SERVER], true));
 		}
 
 		@session_start();
@@ -313,6 +338,7 @@ class API
 
 		$this->section = $match[2] ?? $match[1];
 		$this->path = substr($this->url, strlen($match[0]));
+		$username = null;
 
 		if (preg_match('/\.(json|opml|txt|jsonp|xml)$/', $this->url, $match)) {
 			$this->format = $match[1];
@@ -323,11 +349,16 @@ class API
 			$this->error(501, 'output format is not implemented');
 		}
 
+		// For gPodder
+		if (preg_match('!(\w+__\w{10})!i', $this->path, $match)) {
+			$username = $match[1];
+		}
+
 		if ($this->section === 'auth') {
 			$this->handleAuth();
 		}
 
-		$this->requireAuth();
+		$this->requireAuth($username);
 
 		$return = $this->route();
 
