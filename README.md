@@ -24,7 +24,7 @@ In the future, this will target compatibility with the [Open Podcast API](https:
 
 Just copy the files from the `server` directory into a new directory of your webserver.
 
-If you are not using Apache, make sure to replicate the rules from the `.htaccess` file to your own server.
+If you are not using Apache, make sure to adapt the rules from the `.htaccess` file to your own server.
 
 ### First account
 
