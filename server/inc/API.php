@@ -132,8 +132,7 @@ class API
 	public function login()
 	{
 		$login = $_SERVER['PHP_AUTH_USER'];
-		$login = strtok('__');
-		strtok('');
+		list($login) = explode('__', $login, 2);
 
 		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $login);
 
@@ -356,6 +355,7 @@ class API
 
 		if ($this->section === 'auth') {
 			$this->handleAuth();
+			return;
 		}
 
 		$this->requireAuth($username);
