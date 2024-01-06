@@ -84,7 +84,7 @@ class API
 	 * @throws JsonException
 	 */
 	public function validateURL(string $url): void {
-		if (!preg_match('!^https?://[^/]+/!', $url)) {
+		if (!preg_match('!^https?://[^/]+!', $url)) {
 			$this->error(400, 'Invalid URL: ' . $url);
 		}
 	}
