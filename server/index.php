@@ -70,12 +70,12 @@ function html_head() {
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, target-densitydpi=device-dpi" />
 		<link rel="stylesheet" type="text/css" href="style.css" />
-		<title>' . htmlspecialchars($title) . '</title>
+		<title>' . htmlspecialchars($title ?? '') . '</title>
 		<link rel="icon" href="icon.svg" />
 	</head>
 
 	<body>
-	<h1>' . htmlspecialchars($title) . ' <img src="icon.svg" alt="" /></h1>
+	<h1>' . htmlspecialchars($title ?? '') . ' <img src="icon.svg" alt="" /></h1>
 	<main>';
 }
 
@@ -101,11 +101,11 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
 			printf('<tr><th>%s</th><td>%s</td><td>%s</td><td><a href="%s">%s</a></td></tr>',
-				htmlspecialchars($row->action),
-				htmlspecialchars($row->device),
+				htmlspecialchars($row->action ?? ''),
+				htmlspecialchars($row->device ?? ''),
 				date('d/m/Y H:i', $row->changed),
-				htmlspecialchars($row->url),
-				htmlspecialchars(basename($row->url)),
+				htmlspecialchars($row->url ?? ''),
+				htmlspecialchars(basename($row->url) ?? ''),
 			);
 		}
 	}
@@ -115,7 +115,7 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		foreach ($gpodder->listActiveSubscriptions() as $row) {
 			printf('<tr><th><a href="?id=%d">%s</a></th><td>%s</td><td>%d</td></tr>',
 				$row->id,
-				htmlspecialchars($row->url),
+				htmlspecialchars($row->url ?? ''),
 				date('d/m/Y H:i', $row->changed),
 				$row->count
 			);
@@ -153,7 +153,7 @@ elseif ($api->url === 'login') {
 	html_head();
 
 	if ($error) {
-		printf('<p class="error center">%s</p>', htmlspecialchars($error));
+		printf('<p class="error center">%s</p>', htmlspecialchars($error ?? ''));
 	}
 
 	if (isset($_GET['token'])) {
@@ -188,7 +188,7 @@ elseif ($api->url === 'register') {
 			echo '<p class="error center">Invalid captcha.</p>';
 		}
 		elseif ($error = $gpodder->subscribe($_POST['username'] ?? '', $_POST['password'] ?? '')) {
-			printf('<p class="error center">%s</p>', htmlspecialchars($error));
+			printf('<p class="error center">%s</p>', htmlspecialchars($error ?? ''));
 		}
 		else {
 			echo '<p class="success">Your account is registered.</p>';
