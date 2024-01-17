@@ -28,6 +28,12 @@ class API
 			$url .= ':' . $_SERVER['SERVER_PORT'];
 		}
 
+		// Check if environment variable with service url is set
+		// When running inside Docker, we cannot determine the correct URL by ourselves.
+		if (getenv('gpodder_url') !== false) {
+		    $url = getenv('gpodder_url');
+		}
+		
 		$url .= '/';
 		$this->base_url = $url;
 	}

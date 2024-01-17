@@ -49,6 +49,8 @@ services:
       - type: bind
         source: ~/docker_files/gpodder/data
         target: /var/www/server/data
+    environment:
+      - gpodder_url=https://gpodder.example.org
     hostname: gpodder.example.org
     ports:
       - 80:80
