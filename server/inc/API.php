@@ -7,6 +7,7 @@ class API
 	protected ?string $section;
 	public ?string $url;
 	public ?string $base_url;
+	public ?string $base_path;
 	protected ?string $path;
 	protected ?string $format = null;
 	protected DB $db;
@@ -15,20 +16,28 @@ class API
 	{
 		session_name('sessionid');
 		$this->db = $db;
+		$url = defined('BASE_URL') ? BASE_URL : null;
+		$url ??= getenv('BASE_URL', true) ?: null;
 
-		$url = 'http';
+		if (!$url) {
+			$url = 'http';
 
-		if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
-			$url .= 's';
+			if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
+				$url .= 's';
+			}
+
+			$url .= '://' . $_SERVER['SERVER_NAME'];
+
+			if (!in_array($_SERVER['SERVER_PORT'], [80, 443])) {
+				$url .= ':' . $_SERVER['SERVER_PORT'];
+			}
+
+			$path = substr(dirname($_SERVER['SCRIPT_FILENAME']), strlen($_SERVER['DOCUMENT_ROOT']));
+			$path = trim($path, '/');
+			$url .= '/' . $path . '/';
 		}
 
-		$url .= '://' . $_SERVER['SERVER_NAME'];
-
-		if (!in_array($_SERVER['SERVER_PORT'], [80, 443])) {
-			$url .= ':' . $_SERVER['SERVER_PORT'];
-		}
-
-		$url .= '/';
+		$this->base_path = parse_url($url, PHP_URL_PATH);
 		$this->base_url = $url;
 	}
 
@@ -322,7 +331,9 @@ class API
 	public function handleRequest(): void
 	{
 		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
-		$this->url = strtok(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'), '?');
+		$url = '/' . trim($_SERVER['REQUEST_URI'] ?? '', '/');
+		$url = substr($url, strlen($this->base_path));
+		$this->url = strtok($url, '?');
 
 		$this->debug('Got a %s request on %s', $this->method, $this->url);
 
