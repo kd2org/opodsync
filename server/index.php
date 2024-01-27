@@ -102,7 +102,7 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
 			printf('<tr><th>%s</th><td>%s</td><td>%s</td><td><a href="%s">%s</a></td></tr>',
 				htmlspecialchars($row->action),
-				htmlspecialchars($row->device),
+				htmlspecialchars($row->device ?? ''),
 				date('d/m/Y H:i', $row->changed),
 				htmlspecialchars($row->url),
 				htmlspecialchars(basename($row->url)),

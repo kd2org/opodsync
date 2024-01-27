@@ -375,7 +375,7 @@ class API
 
 		$return = $this->route();
 
-		$this->debug('RETURN:' . PHP_EOL . json_encode($return, JSON_PRETTY_PRINT));
+		$this->debug("RETURN:\n%s", json_encode($return, JSON_PRETTY_PRINT));
 
 		if ($this->format === 'opml') {
 			if ($this->section !== 'subscriptions') {
