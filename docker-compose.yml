@@ -1,0 +1,13 @@
+services:
+  gpodder:
+    container_name: micro-gpodder-server
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ./data
+        target: /var/www/server/data
+    hostname: gpodder.localhost
+    ports:
+      - 8080:8080
