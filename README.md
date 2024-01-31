@@ -42,6 +42,7 @@ In order to run micro-gpodder-server with Docker you only need to build the `Doc
 services:
   gpodder:
     container_name: gPodder
+    user: <uid>:<gid>
     build:
       context: ./micro-gpodder-server
       dockerfile: Dockerfile
