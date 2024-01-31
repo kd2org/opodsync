@@ -135,7 +135,7 @@ class API
 			$this->error(401, 'No username or password provided');
 		}
 
-		$this->requireAuth();
+		$this->requireAuth(null);
 
 		$this->error(200, 'Logged in!');
 	}
