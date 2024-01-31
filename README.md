@@ -36,23 +36,7 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname, here is an example with docker compose:
-
-```yaml
-services:
-  gpodder:
-    container_name: gPodder
-    build:
-      context: ./micro-gpodder-server
-      dockerfile: Dockerfile
-    volumes:
-      - type: bind
-        source: ~/docker_files/gpodder/data
-        target: /var/www/server/data
-    hostname: gpodder.example.org
-    ports:
-      - 80:80
-```
+In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname. An example `docker-compose.yml` is provided.
 
 ### Configuration
 

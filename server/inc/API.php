@@ -34,7 +34,7 @@ class API
 
 			$path = substr(dirname($_SERVER['SCRIPT_FILENAME']), strlen($_SERVER['DOCUMENT_ROOT']));
 			$path = trim($path, '/');
-			$url .= '/' . $path . '/';
+			$url .= $path ? '/' . $path . '/' : '/';
 		}
 
 		$this->base_path = parse_url($url, PHP_URL_PATH);

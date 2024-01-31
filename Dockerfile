@@ -1,6 +1,21 @@
-FROM php:8.2-apache
-COPY ./server/ /var/www/html/
+FROM alpine:edge
+LABEL Maintainer="BohwaZ <https://bohwaz.net/>" \
+      Description="Micro GPodder server"
 
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+RUN apk --no-cache add php82 php82-ctype php82-opcache php82-session php82-sqlite3
 
-EXPOSE 80
+# Setup document root
+RUN mkdir -p /var/www
+RUN mkdir -p /var/www/server
+RUN mkdir -p /var/www/server/data
+
+# Add application
+WORKDIR /var/www/
+COPY server /var/www/server/
+
+EXPOSE 8080
+
+VOLUME ["/var/www/server/data"]
+
+ENV PHP_CLI_SERVER_WORKERS=2
+CMD ["php", "-S", "0.0.0.0:8080", "-t", "server", "server/index.php"]
