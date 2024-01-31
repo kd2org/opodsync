@@ -75,6 +75,7 @@ const TITLE = 'My awesome GPodder server';
 
 // Set to the URL where the server is hosted
 const BASE_URL = 'https://gpodder.mydomain.tld/me/';
+?>
 ```
 
 ## Configuring your podcast client
