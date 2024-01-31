@@ -164,7 +164,7 @@ class API
 	/**
 	 * @throws JsonException
 	 */
-	public function requireAuth(?string $username): void
+	public function requireAuth(?string $username = null): void
 	{
 		if (isset($this->user)) {
 			return;
