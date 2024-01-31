@@ -48,10 +48,10 @@ services:
     volumes:
       - type: bind
         source: ~/docker_files/gpodder/data
-        target: /var/www/server/data
+        target: /var/www/html/data
     hostname: gpodder.example.org
     ports:
-      - 80:80
+      - 8100:8100
 ```
 
 ### Configuration
