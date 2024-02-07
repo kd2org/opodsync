@@ -43,7 +43,7 @@ In order to run micro-gpodder-server with Docker you only need to build the `Doc
 
 ### Configuration
 
-You can create a `config.local.php` in the `data` directory, defining configuration constants:
+You can create a `config.local.php` in the `data` directory (overridable with the `DATA_ROOT` environment variable), defining configuration constants:
 
 ```
 <?php
