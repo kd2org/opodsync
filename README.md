@@ -115,6 +115,10 @@ It doesn't work with:
 
 * Clementine 1.4.0rc1 - Debian (not possible to choose the server: [bug report](https://github.com/clementine-player/Clementine/issues/7202))
 
+## Hosting ##
+
+If you don't want to setup a server on you own, you'll find here a small explanation to [deploy Micro GPodder server on Clever-Cloud](https://blog.broncotoxique.com/2024/03/08/deploy-micro-gpodder-server-on-clever-cloud)
+
 ## License
 
 GNU AGPLv3
