@@ -28,7 +28,7 @@ set_exception_handler(function ($e) {
 	exit;
 });
 
-define('DATA_ROOT', __DIR__ . '/data');
+define('DATA_ROOT', getenv('DATA_ROOT') ?: __DIR__ . '/data');
 
 if (!file_exists(DATA_ROOT)) {
 	mkdir(DATA_ROOT);
