@@ -28,7 +28,7 @@ set_exception_handler(function ($e) {
 	exit;
 });
 
-define('DATA_ROOT', __DIR__ . '/data');
+define('DATA_ROOT', getenv('DATA_ROOT') ?: __DIR__ . '/data');
 
 if (!file_exists(DATA_ROOT)) {
 	mkdir(DATA_ROOT);
@@ -94,15 +94,16 @@ if ($api->url === 'logout') {
 elseif ($gpodder->user && $api->url === 'subscriptions') {
 	html_head();
 
-	echo '<p class="center"><a href="./" class="btn sm">&larr; Back</a></p>';
+	echo '<p class="center"><a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a></p>';
 
 	if (isset($_GET['id'])) {
-		echo '<table><thead><tr><th>Action</th><td>Device</td><td>Date</td><td>Episode</td></tr></thead><tbody>';
+		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
 
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
-			printf('<tr><th>%s</th><td>%s</td><td>%s</td><td><a href="%s">%s</a></td></tr>',
+			printf('<tr><th scope="row">%s</th><td>%s</td><td><time datetime="%s">%s</time></td><td><a href="%s">%s</a></td></tr>',
 				htmlspecialchars($row->action),
 				htmlspecialchars($row->device ?? ''),
+				date(DATE_ISO8601, $row->changed),
 				date('d/m/Y H:i', $row->changed),
 				htmlspecialchars($row->url),
 				htmlspecialchars(basename($row->url)),
@@ -110,12 +111,13 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		}
 	}
 	else {
-		echo '<table><thead><tr><th>Podcast URL</th><td>Last change</td><td>Actions</td></tr></thead><tbody>';
+		echo '<table><thead><tr><th scope="col">Podcast URL</th><th scope="col">Last change</th><th scope="col">Actions</th></tr></thead><tbody>';
 
 		foreach ($gpodder->listActiveSubscriptions() as $row) {
-			printf('<tr><th><a href="?id=%d">%s</a></th><td>%s</td><td>%d</td></tr>',
+			printf('<tr><th scope="row"><a href="?id=%d">%s</a></th><td><time datetime="%s">%s</time></td><td>%d</td></tr>',
 				$row->id,
 				htmlspecialchars($row->url),
+				date(DATE_ISO8601, $row->changed),
 				date('d/m/Y H:i', $row->changed),
 				$row->count
 			);
@@ -132,7 +134,7 @@ elseif ($gpodder->user) {
 		echo '<p class="success center">You are logged in, you can close this and go back to the app.</p>';
 	}
 
-	echo '<p class="center"><img src="icon.svg" width="150" /></p>';
+	echo '<p class="center"><img src="icon.svg" width="150" alt="" /></p>';
 	printf('<h2 class="center">Logged in as %s</h2>', $gpodder->user->name);
 	printf('<h3 class="center">GPodder secret username: %s</h2>', $gpodder->getUserToken());
 	echo '<p class="center"><small>(Use this username in GPodder desktop, as it does not support passwords.)</small></p>';
@@ -165,12 +167,12 @@ elseif ($api->url === 'login') {
 		<fieldset>
 			<legend>Please login</legend>
 			<dl>
-				<dt>Login</dt>
-				<dd><input type="text" required name="login" /></dd>
-				<dt>Password</dt>
-				<dd><input type="password" required name="password" /></dd>
+				<dt><label for="login">Login</label></dt>
+				<dd><input type="text" required name="login" id="login" /></dd>
+				<dt><label for="password">Password</label></dt>
+				<dd><input type="password" required name="password" id="password" /></dd>
 			</dl>
-			<p><button type="submit" class="btn">Login <svg width="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" fill="#ffdd67" r="30"/><g fill="#664e27"><circle cx="20.5" cy="26.6" r="5"/><circle cx="43.5" cy="26.6" r="5"/><path d="m44.6 40.3c-8.1 5.7-17.1 5.6-25.2 0-1-.7-1.8.5-1.2 1.6 2.5 4 7.4 7.7 13.8 7.7s11.3-3.6 13.8-7.7c.6-1.1-.2-2.3-1.2-1.6"/></g></svg></button></p>
+			<p><button type="submit" class="btn">Login <svg aria-hidden="true" width="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" fill="#ffdd67" r="30"/><g fill="#664e27"><circle cx="20.5" cy="26.6" r="5"/><circle cx="43.5" cy="26.6" r="5"/><path d="m44.6 40.3c-8.1 5.7-17.1 5.6-25.2 0-1-.7-1.8.5-1.2 1.6 2.5 4 7.4 7.7 13.8 7.7s11.3-3.6 13.8-7.7c.6-1.1-.2-2.3-1.2-1.6"/></g></svg></button></p>
 		</fieldset>
 	</form>';
 	html_foot();
@@ -201,15 +203,15 @@ elseif ($api->url === 'register') {
 		<fieldset>
 			<legend>Create an account</legend>
 			<dl>
-				<dt>Username</dt>
-				<dd><input type="text" name="username" required /></dd>
-				<dt>Password (minimum 8 characters)</dt>
-				<dd><input type="password" minlength="8" required name="password" /></dd>
+				<dt><label for="username">Username</label></dt>
+				<dd><input type="text" name="username" required id="username" /></dd>
+				<dt><label for="password">Password (minimum 8 characters)</label></dt>
+				<dd><input type="password" minlength="8" required name="password" id="password" /></dd>
 				<dt>Captcha</dt>
-				<dd class="ca">Please enter this number: '.$gpodder->generateCaptcha().'</dd>
-				<dd><input type="text" name="captcha" required /></dd>
+				<dd class="ca"><label for="captcha">Please enter this number: '.$gpodder->generateCaptcha().'</label></dd>
+				<dd><input type="text" name="captcha" required id="captcha" /></dd>
 			</dl>
-			<p><button type="submit" class="btn">Create account <svg width="40px" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" fill="#4bd37b" r="30"/><path d="m46 14-21 21.6-7-7.2-7 7.2 14 14.4 28-28.8z" fill="#fff"/></svg></button></p>
+			<p><button type="submit" class="btn">Create account <svg aria-hidden="true" width="40px" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" fill="#4bd37b" r="30"/><path d="m46 14-21 21.6-7-7.2-7 7.2 14 14.4 28-28.8z" fill="#fff"/></svg></button></p>
 		</fieldset>
 	</form>';
 
@@ -218,7 +220,7 @@ elseif ($api->url === 'register') {
 else {
 	html_head();
 
-	echo '<p class="center"><img src="icon.svg" width="150" /></p>';
+	echo '<p class="center" aria-hidden="true"><img src="icon.svg" width="150" /></p>';
 	echo '<p class="center">
 		<a href="login" class="btn">Login</a>
 		<a href="register" class="btn">Create account</a>
