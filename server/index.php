@@ -40,22 +40,16 @@ if (file_exists(DATA_ROOT . '/config.local.php')) {
 	require DATA_ROOT . '/config.local.php';
 }
 
+if (!defined('ENABLE_SUBSCRIPTIONS')) {
+	define('ENABLE_SUBSCRIPTIONS', false);
+}
+
 if (!defined('DEBUG')) {
 	define('DEBUG', null);
 }
 
 $db = new DB(DATA_ROOT . '/data.sqlite');
 $api = new API($db);
-
-if (!defined('ENABLE_SUBSCRIPTIONS')) {
-	// Enable subscriptions if there is zero account
-	if (!$db->firstColumn('SELECT COUNT(*) FROM users;')) {
-		define('ENABLE_SUBSCRIPTIONS', true);
-	}
-	else {
-		define('ENABLE_SUBSCRIPTIONS', false);
-	}
-}
 
 try {
 	if ($api->handleRequest()) {
