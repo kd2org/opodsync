@@ -40,16 +40,22 @@ if (file_exists(DATA_ROOT . '/config.local.php')) {
 	require DATA_ROOT . '/config.local.php';
 }
 
-if (!defined('ENABLE_SUBSCRIPTIONS')) {
-	define('ENABLE_SUBSCRIPTIONS', false);
-}
-
 if (!defined('DEBUG')) {
 	define('DEBUG', null);
 }
 
 $db = new DB(DATA_ROOT . '/data.sqlite');
 $api = new API($db);
+
+if (!defined('ENABLE_SUBSCRIPTIONS')) {
+	// Enable subscriptions if there is zero account
+	if (!$db->firstColumn('SELECT COUNT(*) FROM users;')) {
+		define('ENABLE_SUBSCRIPTIONS', true);
+	}
+	else {
+		define('ENABLE_SUBSCRIPTIONS', false);
+	}
+}
 
 try {
 	if ($api->handleRequest()) {
@@ -94,7 +100,12 @@ if ($api->url === 'logout') {
 elseif ($gpodder->user && $api->url === 'subscriptions') {
 	html_head();
 
-	echo '<p class="center"><a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a></p>';
+	printf('<p class="center">
+		<a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a>
+		<a href="./subscriptions/%s.opml" class="btn sm">OPML</a>
+	</p>',
+		htmlspecialchars($gpodder->user->name)
+	);
 
 	if (isset($_GET['id'])) {
 		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
