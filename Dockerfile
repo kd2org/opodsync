@@ -2,7 +2,7 @@ FROM alpine:edge
 LABEL Maintainer="BohwaZ <https://bohwaz.net/>" \
       Description="Micro GPodder server"
 
-RUN apk --no-cache add php82 php82-ctype php82-opcache php82-session php82-sqlite3
+RUN apk --no-cache add php83 php83-ctype php83-opcache php83-session php83-sqlite3
 
 # Setup document root
 RUN mkdir -p /var/www
