@@ -13,7 +13,7 @@ CREATE TABLE devices (
 	data TEXT
 );
 
-CREATE UNIQUE INDEX deviceid ON devices (deviceid);
+CREATE UNIQUE INDEX deviceid ON devices (deviceid, user);
 
 CREATE TABLE subscriptions (
 	id INTEGER NOT NULL PRIMARY KEY,
@@ -24,7 +24,7 @@ CREATE TABLE subscriptions (
 	data TEXT
 );
 
-CREATE UNIQUE INDEX subscription_url ON subscriptions (url);
+CREATE UNIQUE INDEX subscription_url ON subscriptions (url, user);
 
 CREATE TABLE episodes_actions (
 	id INTEGER NOT NULL PRIMARY KEY,

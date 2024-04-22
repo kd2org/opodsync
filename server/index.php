@@ -94,7 +94,12 @@ if ($api->url === 'logout') {
 elseif ($gpodder->user && $api->url === 'subscriptions') {
 	html_head();
 
-	echo '<p class="center"><a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a></p>';
+	printf('<p class="center">
+		<a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a>
+		<a href="./subscriptions/%s.opml" class="btn sm">OPML</a>
+	</p>',
+		htmlspecialchars($gpodder->user->name)
+	);
 
 	if (isset($_GET['id'])) {
 		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
