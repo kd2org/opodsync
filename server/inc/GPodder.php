@@ -153,6 +153,6 @@ class GPodder
 			FROM episodes_actions e
 			LEFT JOIN devices d on d.deviceid = json_extract(e.data, \'$.device\')
 			WHERE e.user = ? AND e.subscription = ?
-			ORDER BY changed DESC;', $this->user->id, $subscription);
+			ORDER BY changed DESC LIMIT 200;', $this->user->id, $subscription);
 	}
 }
