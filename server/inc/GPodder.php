@@ -144,7 +144,7 @@ class GPodder
 		return $this->db->all('SELECT s.id, s.url, max(a.changed) as changed, COUNT(*) AS count
 			FROM subscriptions s LEFT JOIN episodes_actions a ON a.subscription = s.id
 			WHERE s.user = ? AND s.deleted = 0
-			GROUP BY s.id ORDER BY s.changed DESC;', $this->user->id);
+			GROUP BY s.id ORDER BY changed DESC;', $this->user->id);
 	}
 
 	public function listActions(int $subscription): array
