@@ -412,8 +412,19 @@ class API
 				$this->error(400, 'Invalid device ID');
 			}
 
-			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data) VALUES (?, ?, \'{}\');', $this->user->id, $deviceid);
-			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user->id, $deviceid);
+			$json = $this->getInput();
+			$json ??= [];
+			$json['subscriptions'] = 0;
+
+			$params = [
+				'device' => $deviceid,
+				'json'   => $json,
+				'name'   => $json->caption ?? null,
+				'user'   => $this->user->id,
+			];
+
+			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data, name) VALUES (:user, :device, :json, :name)
+				ON CONFLICT UPDATE SET data = json_patch(data, :json), name = :name;', $params);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');

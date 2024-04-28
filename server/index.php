@@ -5,6 +5,7 @@ require_once __DIR__ . '/inc/API.php';
 require_once __DIR__ . '/inc/GPodder.php';
 
 error_reporting(E_ALL);
+$backtrace = null;
 
 if (PHP_SAPI === 'cli-server' && file_exists(__DIR__ . $_SERVER['REQUEST_URI']) && !is_dir(__DIR__ . $_SERVER['REQUEST_URI'])) {
 	return false;
@@ -16,6 +17,9 @@ set_error_handler(static function ($severity, $message, $file, $line) {
 		return;
 	}
 
+	global $backtrace;
+	$backtrace = debug_backtrace();
+
 	throw new \ErrorException($message, 0, $severity, $file, $line);
 });
 
@@ -23,7 +27,21 @@ set_exception_handler(function ($e) {
 	http_response_code(500);
 	error_log((string)$e);
 	echo '<pre style="background: #fdd; padding: 20px; border: 5px solid darkred; margin: 10px;"><h2>Internal error</h2>';
-	echo $e;
+
+	error_log(date('[Y-m-d H:i:s] ') . (string) $e);
+
+	if (DEBUG) {
+		echo $e;
+
+		global $backtrace;
+		$backtrace ??= debug_backtrace();
+
+		print_r($backtrace);
+	}
+	else {
+		echo 'An error happened and has been logged to data/error.log<br />Enable DEBUG constant to see errors directly.';
+	}
+
 	echo '</pre>';
 	exit;
 });
@@ -105,13 +123,15 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
 
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
+			$url = strtok(basename($row->url), '?');
+			strtok('');
 			printf('<tr><th scope="row">%s</th><td>%s</td><td><time datetime="%s">%s</time></td><td><a href="%s">%s</a></td></tr>',
 				htmlspecialchars($row->action),
-				htmlspecialchars($row->device ?? ''),
+				htmlspecialchars($row->device_name ?? '?'),
 				date(DATE_ISO8601, $row->changed),
 				date('d/m/Y H:i', $row->changed),
 				htmlspecialchars($row->url),
-				htmlspecialchars(basename($row->url)),
+				htmlspecialchars($url),
 			);
 		}
 	}

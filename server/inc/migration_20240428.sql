@@ -1,11 +1,7 @@
-CREATE TABLE users (
-	id INTEGER NOT NULL PRIMARY KEY,
-	name TEXT NOT NULL,
-	password TEXT NOT NULL
-);
+ALTER TABLE devices RENAME TO devices_old;
+DROP INDEX deviceid;
 
-CREATE UNIQUE INDEX users_name ON users (name);
-
+-- Add new column for device name
 CREATE TABLE devices (
 	id INTEGER NOT NULL PRIMARY KEY,
 	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -16,17 +12,13 @@ CREATE TABLE devices (
 
 CREATE UNIQUE INDEX deviceid ON devices (deviceid, user);
 
-CREATE TABLE subscriptions (
-	id INTEGER NOT NULL PRIMARY KEY,
-	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-	url TEXT NOT NULL,
-	deleted INTEGER NOT NULL DEFAULT 0,
-	changed INTEGER NOT NULL,
-	data TEXT
-);
+INSERT INTO devices SELECT id, user, deviceid, json_extract(data, '$.caption'), data FROM devices_old;
+DROP TABLE devices_old;
 
-CREATE UNIQUE INDEX subscription_url ON subscriptions (url, user);
+ALTER TABLE episodes_actions RENAME TO episodes_actions_old;
+DROP INDEX episodes_idx;
 
+-- Add new column for device
 CREATE TABLE episodes_actions (
 	id INTEGER NOT NULL PRIMARY KEY,
 	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -40,4 +32,9 @@ CREATE TABLE episodes_actions (
 
 CREATE INDEX episodes_idx ON episodes_actions (user, action, changed);
 
-PRAGMA user_version = 20240428;
+INSERT INTO episodes_actions
+	SELECT a.id, a.user, a.subscription, d.id, a.url, a.changed, a.action, a.data
+	FROM episodes_actions_old a
+		LEFT JOIN devices d ON d.deviceid = json_extract(a.data, '$.device');
+
+DROP TABLE episodes_actions_old;
