@@ -37,6 +37,8 @@ set_exception_handler(function ($e) {
 		global $backtrace;
 		$backtrace ??= debug_backtrace();
 
+		error_log(print_r($backtrace, true));
+
 		echo '<hr style="margin: 30px 0; border: none; border-top: 5px solid darkred; background: none;" />';
 		print_r($backtrace);
 	}
