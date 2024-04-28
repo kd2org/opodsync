@@ -20,6 +20,11 @@ class API
 		$url ??= getenv('BASE_URL', true) ?: null;
 
 		if (!$url) {
+			if (!isset($_SERVER['SERVER_PORT'], $_SERVER['SERVER_NAME'], $_SERVER['SCRIPT_FILENAME'], $_SERVER['DOCUMENT_ROOT'])) {
+				echo "Unable to auto-detect application URL, please set BASE_URL constant or environment variable.\n";
+				exit(1);
+			}
+
 			$url = 'http';
 
 			if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
@@ -37,7 +42,7 @@ class API
 			$url .= $path ? '/' . $path . '/' : '/';
 		}
 
-		$this->base_path = parse_url($url, PHP_URL_PATH);
+		$this->base_path = parse_url($url, PHP_URL_PATH) ?? '';
 		$this->base_url = $url;
 	}
 
@@ -423,8 +428,7 @@ class API
 				'user'   => $this->user->id,
 			];
 
-			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data, name) VALUES (:user, :device, :json, :name)
-				ON CONFLICT UPDATE SET data = json_patch(data, :json), name = :name;', $params);
+			$this->db->upsert('devices', $params);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -493,32 +497,28 @@ class API
 			$ts = time();
 
 			if (!empty($input->add) && is_array($input->add)) {
-				$st = $this->db->prepare('INSERT INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0) ON CONFLICT UPDATE SET changed = :ts, deleted = 0;');
-
 				foreach ($input->add as $url) {
 					$this->validateURL($url);
 
-					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user->id);
-					$st->bindValue(':ts', $ts);
-					$st->execute();
-					$st->reset();
-					$st->clear();
+					$this->db->upsert([
+						'user'    => $this->user->id,
+						'url'     => $url,
+						'ts'      => $ts,
+						'deleted' => 0,
+					]);
 				}
 			}
 
 			if (!empty($input->remove) && is_array($input->remove)) {
-				$st = $this->db->prepare('INSERT INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1) ON CONFLICT UPDATE SET changed = :ts, deleted = 1;');
-
 				foreach ($input->remove as $url) {
 					$this->validateURL($url);
 
-					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user->id);
-					$st->bindValue(':ts', $ts);
-					$st->execute();
-					$st->reset();
-					$st->clear();
+					$this->db->upsert([
+						'user'    => $this->user->id,
+						'url'     => $url,
+						'ts'      => $ts,
+						'deleted' => 1,
+					]);
 				}
 			}
 
