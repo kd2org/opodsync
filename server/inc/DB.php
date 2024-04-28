@@ -43,7 +43,7 @@ class DB extends \SQLite3
 			implode(', ', array_map(fn($a) => $a . ' = :' . $a, array_keys($params)))
 		);
 
-		return $this->simple($sql, ...$params);
+		return $this->simple($sql, $params);
 	}
 
 	public function prepare2(string $sql, ...$params)
@@ -57,6 +57,10 @@ class DB extends \SQLite3
 			$st = $this->statements[$hash];
 			$st->reset();
 			$st->clear();
+		}
+
+		if (isset($params[0]) && is_array($params[0])) {
+			$params = $params[0];
 		}
 
 		foreach ($params as $key => $value) {
