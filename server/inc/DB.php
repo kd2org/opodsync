@@ -11,10 +11,24 @@ class DB extends \SQLite3
 		if ($setup) {
 			$this->install();
 		}
+		else {
+			$this->migrate();
+		}
 	}
 
 	public function install() {
 		$this->exec(file_get_contents(__DIR__ . '/schema.sql'));
+	}
+
+	public function migrate() {
+		$v = $this->firstColumn('PRAGMA user_version;');
+
+		if (!$v) {
+			$this->exec(file_get_contents(__DIR__ . '/migration_20240428.sql'));
+			$v = 20240428;
+		}
+
+		$this->simple(sprintf('PRAGMA user_version = %d;', $v));
 	}
 
 	public function prepare2(string $sql, ...$params)

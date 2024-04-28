@@ -149,10 +149,11 @@ class GPodder
 
 	public function listActions(int $subscription): array
 	{
-		return $this->db->all('SELECT *, json_extract(data, \'$.device\') AS device,
-			json_extract(data, \'$.timestamp\') AS timestamp
-			FROM episodes_actions
-			WHERE user = ? AND subscription = ?
+		return $this->db->all('SELECT a.*,
+				d.name AS device_name
+			FROM episodes_actions a
+				LEFT JOIN devices d ON d.id = a.device AND a.user = d.user
+			WHERE a.user = ? AND a.subscription = ?
 			ORDER BY changed DESC;', $this->user->id, $subscription);
 	}
 }
