@@ -33,13 +33,14 @@ class DB extends \SQLite3
 		$this->simple(sprintf('PRAGMA user_version = %d;', $v));
 	}
 
-	public function upsert(string $table, array $params)
+	public function upsert(string $table, array $params, array $conflict_columns)
 	{
 		$sql = sprintf(
-			'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT DO UPDATE SET %s;',
+			'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s;',
 			$table,
 			implode(', ', array_keys($params)),
 			':' . implode(', :', array_keys($params)),
+			implode(', ', $conflict_columns),
 			implode(', ', array_map(fn($a) => $a . ' = :' . $a, array_keys($params)))
 		);
 
