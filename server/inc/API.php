@@ -428,7 +428,7 @@ class API
 				'user'   => $this->user->id,
 			];
 
-			$this->db->upsert('devices', $params);
+			$this->db->upsert('devices', $params, ['device', 'user']);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -500,12 +500,12 @@ class API
 				foreach ($input->add as $url) {
 					$this->validateURL($url);
 
-					$this->db->upsert([
+					$this->db->upsert('subscriptions', [
 						'user'    => $this->user->id,
 						'url'     => $url,
 						'ts'      => $ts,
 						'deleted' => 0,
-					]);
+					], ['user', 'url']);
 				}
 			}
 
@@ -513,12 +513,12 @@ class API
 				foreach ($input->remove as $url) {
 					$this->validateURL($url);
 
-					$this->db->upsert([
+					$this->db->upsert('subscriptions', [
 						'user'    => $this->user->id,
 						'url'     => $url,
 						'ts'      => $ts,
 						'deleted' => 1,
-					]);
+					], ['user', 'url']);
 				}
 			}
 

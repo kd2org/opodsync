@@ -35,7 +35,7 @@ class Feed
 	public function sync(DB $db): void
 	{
 		$db->exec('BEGIN;');
-		$db->upsert('feeds', $this->export());
+		$db->upsert('feeds', $this->export(), ['feed_url']);
 		$feed_id = $db->firstColumn('SELECT id FROM feeds WHERE feed_url = ?;', $this->feed_url);
 		$db->simple('UPDATE subscriptions SET feed = ? WHERE url = ?;', $feed_id, $this->feed_url);
 
@@ -43,7 +43,7 @@ class Feed
 			$episode = (array) $episode;
 			$episode['pubdate'] = $episode['pubdate']->format('Y-m-d H:i:s \U\T\C');
 			$episode['feed'] = $feed_id;
-			$db->upsert('episodes', $episode);
+			$db->upsert('episodes', $episode, ['media_url']);
 			$id = $db->firstColumn('SELECT id FROM episodes WHERE media_url = ?;', $episode['media_url']);
 			$db->simple('UPDATE episodes_actions SET episode = ? WHERE url = ?;', $id, $episode['media_url']);
 		}
