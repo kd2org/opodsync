@@ -13,6 +13,7 @@ Requires PHP 7.4+ and SQLite3 with JSON1 extension.
 * Compatible with gPodder desktop client
 * Self-registration
 * See subscriptions and history on web interface
+* Fetch feeds and episodes metadata and store them locally (optional)
 
 In the future, this will target compatibility with the [Open Podcast API](https://openpodcastapi.org) as well when it is released.
 
@@ -62,7 +63,31 @@ const TITLE = 'My awesome GPodder server';
 
 // Set to the URL where the server is hosted
 const BASE_URL = 'https://gpodder.mydomain.tld/me/';
+
+// Set this to TRUE to forbid users from updating feed metadata,
+// as this may add some load on your server
+// (default is FALSE)
+const DISABLE_USER_METADATA_UPDATE = true;
 ```
+
+### Fetching and updating feeds metadata
+
+Version 0.3.0 brings support for fetching metadata for feed subscriptions.
+
+Feeds will only be fetched/updated if an action has been created on the linked subscription since the last fetch.
+
+To update feeds metadata, users can click the **Update all feeds metadata** button in the subscription list, unless you did set `DISABLE_USER_METADATA_UPDATE` to `TRUE`.
+
+You can also just set a crontab to run `index.php` every hour for example:
+
+```
+@hourly php /var/www/micro-gpodder-server/server/index.php
+```
+
+This requires to set the `BASE_URL` either in `config.local.php` or in an environment variable.
+
+
+*Note: episodes titles may not appear in the list of actions, as the media URL may differ between what your podcast apps reports and what the RSS feed providers. This is because some podcast providers will provide a different URL for each user/app, for adding tracking or advertisement.*
 
 ## Configuring your podcast client
 

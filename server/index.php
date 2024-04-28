@@ -68,6 +68,10 @@ if (!defined('DEBUG')) {
 	define('DEBUG', null);
 }
 
+if (!defined('DISABLE_USER_METADATA_UPDATE')) {
+	define('DISABLE_USER_METADATA_UPDATE', false);
+}
+
 $db = new DB(DATA_ROOT . '/data.sqlite');
 $api = new API($db);
 
@@ -138,26 +142,20 @@ if ($api->url === 'logout') {
 elseif ($gpodder->user && $api->url === 'subscriptions') {
 	html_head();
 
-	if (isset($_POST['update'])) {
+	if (isset($_POST['update']) && !DISABLE_USER_METADATA_UPDATE) {
 		echo '<p class="center"><a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a></p>';
 		$gpodder->updateAllFeeds();
 		exit;
 	}
 	elseif (isset($_GET['id'])) {
-		echo '<form method="post" action=""><p class="center">
+		echo '<p class="center">
 			<a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a>
-			<button type="submit" class="btn sm" name="fetch" value=1>Update feed metadata</button>
-		</p></form>';
+		</p>';
 
-		if (!empty($_POST['fetch'])) {
-			$feed = $gpodder->updateFeedForSubscription((int)$_GET['id']);
-		}
-		else {
-			$feed = $gpodder->getFeedForSubscription((int)$_GET['id']);
-		}
+		$feed = $gpodder->getFeedForSubscription((int)$_GET['id']);
 
 		if (!$feed) {
-			echo '<p>No information is available on this feed.</p>';
+			echo '<p class="help">No information is available on this feed.</p>';
 		}
 		else {
 			printf('<article class="feed"><h2><a href="%s">%s</a></h2><p>%s</p></article>',
@@ -189,20 +187,21 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		printf('<form method="post" action=""><p class="center">
 			<a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a>
 			<a href="./subscriptions/%s.opml" class="btn sm">OPML</a>
-			<button type="submit" class="btn sm" name="update" value=1>Update all feeds metadata</button>
+			%s
 		</p></form>',
-			htmlspecialchars($gpodder->user->name)
+			htmlspecialchars($gpodder->user->name),
+			DISABLE_USER_METADATA_UPDATE ? '' : '<button type="submit" class="btn sm" name="update" value=1>Update all feeds metadata</button>',
 		);
 
-		echo '<table><thead><tr><th scope="col">Podcast URL</th><th scope="col">Last change</th><th scope="col">Actions</th></tr></thead><tbody>';
+		echo '<table><thead><tr><th scope="col">Podcast URL</th><th scope="col">Last action</th><th scope="col">Actions</th></tr></thead><tbody>';
 
 		foreach ($gpodder->listActiveSubscriptions() as $row) {
 			$title = $row->title ?? str_replace(['http://', 'https://'], '', $row->url);
 			printf('<tr><th scope="row"><a href="?id=%d">%s</a></th><td><time datetime="%s">%s</time></td><td>%d</td></tr>',
 				$row->id,
 				htmlspecialchars($title),
-				date(DATE_ISO8601, $row->changed),
-				date('d/m/Y H:i', $row->changed),
+				date(DATE_ISO8601, $row->last_change),
+				date('d/m/Y H:i', $row->last_change),
 				$row->count
 			);
 		}
