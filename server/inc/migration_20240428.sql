@@ -24,7 +24,7 @@ CREATE TABLE episodes (
 	pubdate TEXT NULL DEFAULT CURRENT_TIMESTAMP CHECK (pubdate IS NULL OR datetime(pubdate) = pubdate)
 );
 
-CREATE INDEX episodes_unique ON episodes (feed, media_url);
+CREATE UNIQUE INDEX episodes_unique ON episodes (feed, media_url);
 
 ALTER TABLE subscriptions RENAME TO subscriptions_old;
 DROP INDEX subscription_url;
