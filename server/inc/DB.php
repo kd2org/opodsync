@@ -2,6 +2,8 @@
 
 class DB extends \SQLite3
 {
+	protected $statements = [];
+
 	public function __construct(string $file)
 	{
 		$setup = !file_exists($file);
@@ -31,9 +33,31 @@ class DB extends \SQLite3
 		$this->simple(sprintf('PRAGMA user_version = %d;', $v));
 	}
 
+	public function upsert(string $table, array $params)
+	{
+		$sql = sprintf(
+			'INSERT INTO %s (%s) VALUES (%s) ON CONFLICT DO UPDATE SET %s;',
+			$table,
+			implode(', ', array_keys($params)),
+			':' . implode(', :', array_keys($params)),
+			implode(', ', array_map(fn($a) => $a . ' = :' . $a, array_keys($params)))
+		);
+
+		return $this->simple($sql, ...$params);
+	}
+
 	public function prepare2(string $sql, ...$params)
 	{
-		$st = $this->prepare($sql);
+		$hash = md5($sql);
+
+		if (!array_key_exists($hash, $this->statements)) {
+			$st = $this->statements[$hash] = $this->prepare($sql);
+		}
+		else {
+			$st = $this->statements[$hash];
+			$st->reset();
+			$st->clear();
+		}
 
 		foreach ($params as $key => $value) {
 			if (is_int($key)) {

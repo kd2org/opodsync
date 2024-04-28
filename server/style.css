@@ -189,6 +189,22 @@ table a {
 	display: block;
 }
 
+.feed img {
+	max-width: 150px;
+}
+
+.feed figure {
+	float: right;
+}
+
+.help {
+	color: #666;
+	margin: 1em;
+}
+
+time {
+	white-space: pre;
+}
 
 @media screen and (max-width: 900px) {
 	body > h1 {
