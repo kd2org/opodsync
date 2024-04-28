@@ -482,7 +482,7 @@ class API
 			$ts = time();
 
 			if (!empty($input->add) && is_array($input->add)) {
-				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0);');
+				$st = $this->db->prepare('INSERT INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0) ON CONFLICT UPDATE SET changed = :ts, deleted = 0;');
 
 				foreach ($input->add as $url) {
 					$this->validateURL($url);
@@ -497,7 +497,7 @@ class API
 			}
 
 			if (!empty($input->remove) && is_array($input->remove)) {
-				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1);');
+				$st = $this->db->prepare('INSERT INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1) ON CONFLICT UPDATE SET changed = :ts, deleted = 1;');
 
 				foreach ($input->remove as $url) {
 					$this->validateURL($url);
