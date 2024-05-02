@@ -419,16 +419,16 @@ class API
 
 			$json = $this->getInput();
 			$json ??= [];
-			$json['subscriptions'] = 0;
+			$json->subscriptions = 0;
 
 			$params = [
-				'device' => $deviceid,
-				'json'   => $json,
+				'deviceid' => $deviceid,
+				'data'   => json_encode($json),
 				'name'   => $json->caption ?? null,
 				'user'   => $this->user->id,
 			];
 
-			$this->db->upsert('devices', $params, ['device', 'user']);
+			$this->db->upsert('devices', $params, ['deviceid', 'user']);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -503,7 +503,7 @@ class API
 					$this->db->upsert('subscriptions', [
 						'user'    => $this->user->id,
 						'url'     => $url,
-						'ts'      => $ts,
+						'changed' => $ts,
 						'deleted' => 0,
 					], ['user', 'url']);
 				}
