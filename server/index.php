@@ -128,7 +128,7 @@ function format_description(string $str): string {
 			return '[' . $match[2] . '](' . $url . ')';
 		}
 	}, $str);
-	$str = htmlspecialchars(strip_tags($str));
+	$str = htmlspecialchars(strip_tags($str ?? ''));
 	$str = preg_replace("!(?:\r?\n){3,}!", "\n\n", $str);
 	$str = preg_replace('!\[([^\]]+)\]\(([^\)]+)\)!', '<a href="$2">$1</a>', $str);
 	$str = preg_replace(';(?<!")https?://[^<\s]+(?!");', '<a href="$0">$0</a>', $str);
@@ -161,9 +161,9 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		}
 		else {
 			printf('<article class="feed"><h2><a href="%s">%s</a></h2><p>%s</p></article>',
-				htmlspecialchars($feed->url),
-				htmlspecialchars($feed->title),
-				format_description($feed->description)
+				htmlspecialchars($feed->url ?? ''),
+				htmlspecialchars($feed->title ?? ''),
+				format_description($feed->description ?? '')
 			);
 
 			echo '<p class="help">Note: episodes titles might be missing because of trackers/ads used by some podcast providers.</p>';
