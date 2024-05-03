@@ -156,10 +156,7 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 
 		$feed = $gpodder->getFeedForSubscription((int)$_GET['id']);
 
-		if (!$feed) {
-			echo '<p class="help">No information is available on this feed.</p>';
-		}
-		else {
+		if (isset($feed->url, $feed->title, $feed->description)) {
 			printf('<article class="feed"><h2><a href="%s">%s</a></h2><p>%s</p></article>',
 				htmlspecialchars($feed->url),
 				htmlspecialchars($feed->title),
@@ -167,6 +164,9 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 			);
 
 			echo '<p class="help">Note: episodes titles might be missing because of trackers/ads used by some podcast providers.</p>';
+		}
+		else {
+			echo '<p class="help">No information is available on this feed.</p>';
 		}
 
 		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
