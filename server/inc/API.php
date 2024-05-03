@@ -423,7 +423,7 @@ class API
 
 			$params = [
 				'deviceid' => $deviceid,
-				'json'     => json_encode($json),
+				'data'     => json_encode($json),
 				'name'     => $json->caption ?? null,
 				'user'     => $this->user->id,
 			];
