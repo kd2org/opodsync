@@ -1,6 +1,6 @@
 services:
   gpodder:
-    container_name: micro-gpodder-server
+    container_name: opodsync
     build:
       context: ./
       dockerfile: Dockerfile
@@ -8,6 +8,6 @@ services:
       - type: bind
         source: ./server/data
         target: /var/www/server/data
-    hostname: gpodder.localhost
+    hostname: opodsync.localhost
     ports:
       - 8080:8080

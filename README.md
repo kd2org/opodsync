@@ -1,6 +1,8 @@
-# Micro GPodder server
+# oPodSync - a minimalist GPodder-compatible server
 
-This is a minimalist GPodder server to self-host your podcast synchronization data.
+*(Previously known as Micro GPodder server)*
+
+This is a minimalist podcast synchronization server, for self-hosting your podcast listening / download history.
 
 This allows you to keep track of which episodes have been listened to.
 
@@ -8,6 +10,7 @@ Requires PHP 7.4+ and SQLite3 with JSON1 extension.
 
 ## Features
 
+* Compatible with [GPodder](https://gpoddernet.readthedocs.io/en/latest/api/reference/) and NextCloud [gPodder Sync](https://apps.nextcloud.com/apps/gpoddersync) APIs
 * Stores history of subscriptions and episodes (plays, downloads, etc.)
 * Sync between devices
 * Compatible with gPodder desktop client
@@ -15,11 +18,16 @@ Requires PHP 7.4+ and SQLite3 with JSON1 extension.
 * See subscriptions and history on web interface
 * Fetch feeds and episodes metadata and store them locally (optional)
 
-In the future, this will target compatibility with the [Open Podcast API](https://openpodcastapi.org) as well when it is released.
+## Roadmap
+
+* Support [Podcasting 2.0 GUID](https://podcasting2.org/podcast-namespace/tags/guid)
+* Unit tests
+* Implement the [Open Podcast API](https://openpodcastapi.org)
+* Download, archive and listen to podcasts from the web UI (optional feature)
 
 ## Screenshots
 
-<img src="https://github.com/bohwaz/micro-gpodder-server/assets/584819/016b835d-2afe-47ef-86f0-dd8acc51aa89" height=300 /> <img src="https://github.com/bohwaz/micro-gpodder-server/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc" height=300 />
+<img src="https://github.com/kd2org/opodsync/assets/584819/016b835d-2afe-47ef-86f0-dd8acc51aa89" height=300 /> <img src="https://github.com/kd2org/opodsync/assets/584819/45da98da-ded1-44b3-9607-c114c3fd7dbc" height=300 />
 
 ## Installation
 
@@ -40,7 +48,7 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-In order to run micro-gpodder-server with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname. An example `docker-compose.yml` is provided.
+In order to run oPodSync with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname. An example `docker-compose.yml` is provided.
 
 ### Configuration
 
@@ -81,7 +89,7 @@ To update feeds metadata, users can click the **Update all feeds metadata** butt
 You can also just set a crontab to run `index.php` every hour for example:
 
 ```
-@hourly php /var/www/micro-gpodder-server/server/index.php
+@hourly php /var/www/opodsync/server/index.php
 ```
 
 This requires to set the `BASE_URL` either in `config.local.php` or in an environment variable.
@@ -139,6 +147,12 @@ Please report if apps work (or not) with other clients.
 It doesn't work with:
 
 * Clementine 1.4.0rc1 - Debian (not possible to choose the server: [bug report](https://github.com/clementine-player/Clementine/issues/7202))
+
+## Other interesting resources
+
+* [Podcast Index](https://podcastindex.org/) to find podcasts and apps
+* [Castopod](https://castopod.org/) to share your podcast in the Fediverse
+* [Podcasting 2.0](https://podcasting2.org/) to find modern listening apps and update your podcast feeds to the latest features
 
 ## License
 
