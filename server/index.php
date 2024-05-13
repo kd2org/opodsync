@@ -93,7 +93,7 @@ if (PHP_SAPI === 'cli') {
 }
 
 function html_head() {
-	$title = defined('TITLE') ? TITLE : 'My micro podcast server';
+	$title = defined('TITLE') ? TITLE : 'My oPodSync server';
 
 	echo '<!DOCTYPE html>
 	<html lang="en">

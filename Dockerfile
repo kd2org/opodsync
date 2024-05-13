@@ -1,6 +1,6 @@
 FROM alpine:edge
 LABEL Maintainer="BohwaZ <https://bohwaz.net/>" \
-      Description="Micro GPodder server"
+      Description="oPodSync"
 
 RUN apk --no-cache add php83 php83-ctype php83-opcache php83-session php83-sqlite3
 

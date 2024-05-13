@@ -56,7 +56,7 @@ class Feed
 		if (function_exists('curl_exec')) {
 			$ch = curl_init($this->feed_url);
 			curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: micro-gpodder-server']);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: oPodSync']);
 			curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
@@ -73,7 +73,7 @@ class Feed
 		else {
 			$ctx = stream_context_create([
 				'http' => [
-					'header'          => 'User-Agent: micro-gpodder-server',
+					'header'          => 'User-Agent: oPodSync',
 					'max_redirects'   => 5,
 					'follow_location' => true,
 					'timeout'         => 10,
