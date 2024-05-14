@@ -126,7 +126,7 @@ class Feed
 		$this->title = $this->getTagValue($body, 'title');
 		$this->description = $this->getTagValue($body, 'description');
 		$this->language = $language ? substr($language, 0, 2) : null;
-		$this->image_url = $this->getTagAttribute($item, 'itunes:image', 'href') ?? $this->getTagValue($body, 'image', 'url');
+		$this->image_url = $this->getTagAttribute($body, 'itunes:image', 'href') ?? $this->getTagValue($body, 'image', 'url');
 		$this->pubdate = $pubdate ? new \DateTime($pubdate) : null;
 
 		if (!$this->title) {
