@@ -26,23 +26,8 @@ CREATE TABLE episodes (
 
 CREATE UNIQUE INDEX episodes_unique ON episodes (feed, media_url);
 
-CREATE TABLE users (
-	id INTEGER NOT NULL PRIMARY KEY,
-	name TEXT NOT NULL,
-	password TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX users_name ON users (name);
-
-CREATE TABLE devices (
-	id INTEGER NOT NULL PRIMARY KEY,
-	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-	deviceid TEXT NOT NULL,
-	name TEXT NULL,
-	data TEXT
-);
-
-CREATE UNIQUE INDEX deviceid ON devices (deviceid, user);
+ALTER TABLE subscriptions RENAME TO subscriptions_old;
+DROP INDEX subscription_url;
 
 CREATE TABLE subscriptions (
 	id INTEGER NOT NULL PRIMARY KEY,
@@ -55,8 +40,29 @@ CREATE TABLE subscriptions (
 );
 
 CREATE UNIQUE INDEX subscription_url ON subscriptions (url, user);
-CREATE INDEX subscription_feed ON subscriptions (feed);
 
+INSERT INTO subscriptions SELECT id, user, NULL, url, deleted, changed, data FROM subscriptions_old;
+
+ALTER TABLE devices RENAME TO devices_old;
+DROP INDEX deviceid;
+
+-- Add new column for device name
+CREATE TABLE devices (
+	id INTEGER NOT NULL PRIMARY KEY,
+	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+	deviceid TEXT NOT NULL,
+	name TEXT NULL,
+	data TEXT
+);
+
+CREATE UNIQUE INDEX deviceid ON devices (deviceid, user);
+
+INSERT INTO devices SELECT id, user, deviceid, json_extract(data, '$.caption'), data FROM devices_old;
+
+ALTER TABLE episodes_actions RENAME TO episodes_actions_old;
+DROP INDEX episodes_idx;
+
+-- Add new column for device
 CREATE TABLE episodes_actions (
 	id INTEGER NOT NULL PRIMARY KEY,
 	user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -70,6 +76,16 @@ CREATE TABLE episodes_actions (
 );
 
 CREATE INDEX episodes_idx ON episodes_actions (user, action, changed);
-CREATE INDEX episodes_actions_link ON episodes_actions (episode);
 
-PRAGMA user_version = 20240428;
+INSERT INTO episodes_actions
+	SELECT a.id, a.user, a.subscription, e.id, d.id, a.url, a.changed, a.action, a.data
+	FROM episodes_actions_old a
+		LEFT JOIN episodes e ON e.media_url = a.url
+		LEFT JOIN devices d ON d.deviceid = json_extract(a.data, '$.device');
+
+DROP TABLE episodes_actions_old;
+DROP TABLE devices_old;
+DROP TABLE subscriptions_old;
+
+CREATE INDEX subscription_feed ON subscriptions (feed);
+CREATE INDEX episodes_actions_link ON episodes_actions (episode);

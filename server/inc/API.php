@@ -20,6 +20,11 @@ class API
 		$url ??= getenv('BASE_URL', true) ?: null;
 
 		if (!$url) {
+			if (!isset($_SERVER['SERVER_PORT'], $_SERVER['SERVER_NAME'], $_SERVER['SCRIPT_FILENAME'], $_SERVER['DOCUMENT_ROOT'])) {
+				echo "Unable to auto-detect application URL, please set BASE_URL constant or environment variable.\n";
+				exit(1);
+			}
+
 			$url = 'http';
 
 			if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
@@ -37,7 +42,7 @@ class API
 			$url .= $path ? '/' . $path . '/' : '/';
 		}
 
-		$this->base_path = parse_url($url, PHP_URL_PATH);
+		$this->base_path = parse_url($url, PHP_URL_PATH) ?? '';
 		$this->base_url = $url;
 	}
 
@@ -412,8 +417,18 @@ class API
 				$this->error(400, 'Invalid device ID');
 			}
 
-			$this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid, data) VALUES (?, ?, \'{}\');', $this->user->id, $deviceid);
-			$this->db->simple('UPDATE devices SET data = json_patch(json_patch(data, ?), \'{"subscriptions":0}\') WHERE user = ? AND deviceid = ? ;', json_encode($this->getInput()), $this->user->id, $deviceid);
+			$json = $this->getInput();
+			$json ??= [];
+			$json->subscriptions = 0;
+
+			$params = [
+				'deviceid' => $deviceid,
+				'data'     => json_encode($json),
+				'name'     => $json->caption ?? null,
+				'user'     => $this->user->id,
+			];
+
+			$this->db->upsert('devices', $params, ['deviceid', 'user']);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -482,32 +497,28 @@ class API
 			$ts = time();
 
 			if (!empty($input->add) && is_array($input->add)) {
-				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 0);');
-
 				foreach ($input->add as $url) {
 					$this->validateURL($url);
 
-					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user->id);
-					$st->bindValue(':ts', $ts);
-					$st->execute();
-					$st->reset();
-					$st->clear();
+					$this->db->upsert('subscriptions', [
+						'user'    => $this->user->id,
+						'url'     => $url,
+						'changed' => $ts,
+						'deleted' => 0,
+					], ['user', 'url']);
 				}
 			}
 
 			if (!empty($input->remove) && is_array($input->remove)) {
-				$st = $this->db->prepare('INSERT OR REPLACE INTO subscriptions (user, url, changed, deleted) VALUES (:user, :url, :ts, 1);');
-
 				foreach ($input->remove as $url) {
 					$this->validateURL($url);
 
-					$st->bindValue(':url', $url);
-					$st->bindValue(':user', $this->user->id);
-					$st->bindValue(':ts', $ts);
-					$st->execute();
-					$st->reset();
-					$st->clear();
+					$this->db->upsert('subscriptions', [
+						'user'    => $this->user->id,
+						'url'     => $url,
+						'changed' => $ts,
+						'deleted' => 1,
+					], ['user', 'url']);
 				}
 			}
 

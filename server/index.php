@@ -3,8 +3,10 @@
 require_once __DIR__ . '/inc/DB.php';
 require_once __DIR__ . '/inc/API.php';
 require_once __DIR__ . '/inc/GPodder.php';
+require_once __DIR__ . '/inc/Feed.php';
 
 error_reporting(E_ALL);
+$backtrace = null;
 
 if (PHP_SAPI === 'cli-server' && file_exists(__DIR__ . $_SERVER['REQUEST_URI']) && !is_dir(__DIR__ . $_SERVER['REQUEST_URI'])) {
 	return false;
@@ -16,17 +18,42 @@ set_error_handler(static function ($severity, $message, $file, $line) {
 		return;
 	}
 
+	global $backtrace;
+	$backtrace = debug_backtrace();
+
 	throw new \ErrorException($message, 0, $severity, $file, $line);
 });
 
 set_exception_handler(function ($e) {
-	http_response_code(500);
+	@http_response_code(500);
 	error_log((string)$e);
-	echo '<pre style="background: #fdd; padding: 20px; border: 5px solid darkred; margin: 10px;"><h2>Internal error</h2>';
-	echo $e;
+	echo '<pre style="background: #fdd; padding: 20px; border: 5px solid darkred; position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; white-space: pre-wrap;"><h1>Internal error</h1>';
+
+	error_log((string) $e);
+
+	if (DEBUG) {
+		echo $e;
+
+		global $backtrace;
+		$backtrace ??= debug_backtrace();
+
+		error_log(print_r($backtrace, true));
+
+		echo '<hr style="margin: 30px 0; border: none; border-top: 5px solid darkred; background: none;" />';
+		print_r($backtrace);
+	}
+	else {
+		echo 'An error happened and has been logged to data/error.log<br />Enable DEBUG constant to see errors directly.';
+	}
+
 	echo '</pre>';
 	exit;
 });
+
+// Fix issues with badly configured web servers
+if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+	@list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+}
 
 define('DATA_ROOT', getenv('DATA_ROOT') ?: __DIR__ . '/data');
 
@@ -48,6 +75,10 @@ if (!defined('DEBUG')) {
 	define('DEBUG', null);
 }
 
+if (!defined('DISABLE_USER_METADATA_UPDATE')) {
+	define('DISABLE_USER_METADATA_UPDATE', false);
+}
+
 $db = new DB(DATA_ROOT . '/data.sqlite');
 $api = new API($db);
 
@@ -61,8 +92,13 @@ try {
 
 $gpodder = new GPodder($db);
 
+if (PHP_SAPI === 'cli') {
+	$gpodder->updateAllFeeds(true);
+	exit(0);
+}
+
 function html_head() {
-	$title = defined('TITLE') ? TITLE : 'My micro podcast server';
+	$title = defined('TITLE') ? TITLE : 'My oPodSync server';
 
 	echo '<!DOCTYPE html>
 	<html lang="en">
@@ -86,6 +122,25 @@ function html_foot() {
 	</html>';
 }
 
+function format_description(string $str): string {
+	$str = str_replace('</p>', "\n\n", $str);
+	$str = preg_replace_callback('!<a[^>]*href=(".*?"|\'.*?\'|\S+)[^>]*>(.*?)</a>!i', function ($match) {
+		$url = trim($match[1], '"\'');
+		if ($url === $match[2]) {
+			return $match[1];
+		}
+		else {
+			return '[' . $match[2] . '](' . $url . ')';
+		}
+	}, $str);
+	$str = htmlspecialchars(strip_tags($str));
+	$str = preg_replace("!(?:\r?\n){3,}!", "\n\n", $str);
+	$str = preg_replace('!\[([^\]]+)\]\(([^\)]+)\)!', '<a href="$2">$1</a>', $str);
+	$str = preg_replace(';(?<!")https?://[^<\s]+(?!");', '<a href="$0">$0</a>', $str);
+	$str = nl2br($str);
+	return $str;
+}
+
 if ($api->url === 'logout') {
 	$gpodder->logout();
 	header('Location: ./');
@@ -94,36 +149,66 @@ if ($api->url === 'logout') {
 elseif ($gpodder->user && $api->url === 'subscriptions') {
 	html_head();
 
-	printf('<p class="center">
-		<a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a>
-		<a href="./subscriptions/%s.opml" class="btn sm">OPML</a>
-	</p>',
-		htmlspecialchars($gpodder->user->name)
-	);
+	if (isset($_POST['update']) && !DISABLE_USER_METADATA_UPDATE) {
+		echo '<p class="center"><a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a></p>';
+		$gpodder->updateAllFeeds();
+		exit;
+	}
+	elseif (isset($_GET['id'])) {
+		echo '<p class="center">
+			<a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a>
+		</p>';
 
-	if (isset($_GET['id'])) {
+		$feed = $gpodder->getFeedForSubscription((int)$_GET['id']);
+
+		if (isset($feed->url, $feed->title, $feed->description)) {
+			printf('<article class="feed"><h2><a href="%s">%s</a></h2><p>%s</p></article>',
+				htmlspecialchars($feed->url),
+				htmlspecialchars($feed->title),
+				format_description($feed->description)
+			);
+
+			echo '<p class="help">Note: episodes titles might be missing because of trackers/ads used by some podcast providers.</p>';
+		}
+		else {
+			echo '<p class="help">No information is available on this feed.</p>';
+		}
+
 		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
 
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
+			$url = strtok(basename($row->url), '?');
+			strtok('');
+			$title = $row->title ?? $url;
 			printf('<tr><th scope="row">%s</th><td>%s</td><td><time datetime="%s">%s</time></td><td><a href="%s">%s</a></td></tr>',
 				htmlspecialchars($row->action),
-				htmlspecialchars($row->device ?? ''),
+				htmlspecialchars($row->device_name ?? '?'),
 				date(DATE_ISO8601, $row->changed),
 				date('d/m/Y H:i', $row->changed),
 				htmlspecialchars($row->url),
-				htmlspecialchars(basename($row->url)),
+				htmlspecialchars($title),
 			);
 		}
 	}
 	else {
-		echo '<table><thead><tr><th scope="col">Podcast URL</th><th scope="col">Last change</th><th scope="col">Actions</th></tr></thead><tbody>';
+		printf('<form method="post" action=""><p class="center">
+			<a href="./" class="btn sm" aria-label="Go Back">&larr; Back</a>
+			<a href="./subscriptions/%s.opml" class="btn sm">OPML</a>
+			%s
+		</p></form>',
+			htmlspecialchars($gpodder->user->name),
+			DISABLE_USER_METADATA_UPDATE ? '' : '<button type="submit" class="btn sm" name="update" value=1>Update all feeds metadata</button>',
+		);
+
+		echo '<table><thead><tr><th scope="col">Podcast URL</th><th scope="col">Last action</th><th scope="col">Actions</th></tr></thead><tbody>';
 
 		foreach ($gpodder->listActiveSubscriptions() as $row) {
+			$title = $row->title ?? str_replace(['http://', 'https://'], '', $row->url);
 			printf('<tr><th scope="row"><a href="?id=%d">%s</a></th><td><time datetime="%s">%s</time></td><td>%d</td></tr>',
 				$row->id,
-				htmlspecialchars($row->url),
-				date(DATE_ISO8601, $row->changed),
-				date('d/m/Y H:i', $row->changed),
+				htmlspecialchars($title),
+				date(DATE_ISO8601, $row->last_change),
+				date('d/m/Y H:i', $row->last_change),
 				$row->count
 			);
 		}
