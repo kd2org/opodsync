@@ -172,7 +172,11 @@ class GPodder
 		}
 
 		$feed = new Feed($url);
-		$feed->fetch();
+
+		if (!$feed->fetch()) {
+			return null;
+		}
+
 		$feed->sync($this->db);
 
 		return $feed;

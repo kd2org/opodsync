@@ -51,7 +51,7 @@ class Feed
 		$db->exec('END');
 	}
 
-	public function fetch(): void
+	public function fetch(): bool
 	{
 		if (function_exists('curl_exec')) {
 			$ch = curl_init($this->feed_url);
@@ -92,9 +92,8 @@ class Feed
 
 		$this->last_fetch = time();
 
-
 		if (!$body) {
-			return;
+			return false;
 		}
 
 		while (preg_match('!<item[^>]*>(.*?)</item>!s', $body, $match)) {
@@ -122,22 +121,19 @@ class Feed
 		$pubdate = $this->getTagValue($body, 'pubDate');
 		$language = $this->getTagValue($body, 'language');
 
-		$this->url = $this->getTagValue($body, 'link');
 		$this->title = $this->getTagValue($body, 'title');
+
+		if (!$this->title) {
+			return false;
+		}
+
+		$this->url = $this->getTagValue($body, 'link');
 		$this->description = $this->getTagValue($body, 'description');
 		$this->language = $language ? substr($language, 0, 2) : null;
 		$this->image_url = $this->getTagAttribute($body, 'itunes:image', 'href') ?? $this->getTagValue($body, 'image', 'url');
 		$this->pubdate = $pubdate ? new \DateTime($pubdate) : null;
 
-		if (!$this->title) {
-			throw new \LogicException('Missing title for: ' . $this->feed_url);
-		}
-
-		foreach ($this->episodes as $episode) {
-			if (empty($episode->media_url) || empty($episode->title)) {
-				var_dump($this->feed_url, $episode); exit;
-			}
-		}
+		return true;
 	}
 
 	protected function getDuration(?string $str): ?int
