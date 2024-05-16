@@ -154,10 +154,19 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 		$gpodder->updateAllFeeds();
 		exit;
 	}
+
+	if (isset($_POST['delete'])) {
+		$gpodder->deleteSubscription($_POST['delete']);
+		exit;
+	}
+
 	elseif (isset($_GET['id'])) {
-		echo '<p class="center">
-			<a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a>
-		</p>';
+		printf('<p class="center">
+					<a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a>
+					<button type="submit" class="btn sm" name="delete" value=%d>Delete subscription</button>
+				</p>',
+				$_GET['id']
+			);
 
 		$feed = $gpodder->getFeedForSubscription((int)$_GET['id']);
 

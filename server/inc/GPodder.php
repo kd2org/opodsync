@@ -227,4 +227,9 @@ class GPodder
 			echo "Nothing to update\n";
 		}
 	}
+
+	public function deleteSubscription(int $subscription): ?bool
+	{
+		$this->db->simple('Update subscriptions Set deleted = 1 Where id = ?;', $subscription);
+	}
 }
