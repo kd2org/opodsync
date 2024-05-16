@@ -407,7 +407,7 @@ class API
 	public function devices(): array
 	{
 		if ($this->method === 'GET') {
-			return $this->queryWithData('SELECT * FROM devices WHERE user = ?;', $this->user->id);
+			return $this->queryWithData('SELECT deviceid as id, user, deviceid, name, data FROM devices WHERE user = ?;', $this->user->id);
 		}
 
 		if ($this->method === 'POST') {
