@@ -568,7 +568,7 @@ class API
 		$this->db->exec('BEGIN;');
 
 		$timestamp = time();
-		$st = $this->db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data) VALUES (:user, :subscription, :url, :changed, :action, :data);');
+		$st = $this->db->prepare('INSERT INTO episodes_actions (user, subscription, url, device, changed, action, data) VALUES (:user, :subscription, :url, :device, :changed, :action, :data);');
 
 		foreach ($input as $action) {
 			if (!isset($action->podcast, $action->action, $action->episode)) {
@@ -585,9 +585,20 @@ class API
 				$id = $this->db->lastInsertRowID();
 			}
 
+            if (isset($action->device)) {
+                $device = $this->db->firstColumn('SELECT id FROM devices WHERE deviceid = ? AND user = ?;', $action->device, $this->user->id);
+                if (!$device) {
+                    $this->db->simple('INSERT OR IGNORE INTO devices (user, deviceid) VALUES (?, ?);', $this->user->id, $action->device);
+                    $device = $this->db->lastInsertRowID();
+                }
+            } else {
+                $device = NULL;
+            }
+
 			$st->bindValue(':user', $this->user->id);
 			$st->bindValue(':subscription', $id);
 			$st->bindValue(':url', $action->episode);
+			$st->bindValue(':device', $device);
 			$st->bindValue(':changed', !empty($action->timestamp) ? strtotime($action->timestamp) : $timestamp);
 			$st->bindValue(':action', strtolower($action->action));
 			unset($action->action, $action->episode, $action->podcast);
