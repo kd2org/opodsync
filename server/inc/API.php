@@ -199,11 +199,11 @@ class API
 		@session_start();
 
 		if (empty($_SESSION['user'])) {
-			$this->error(400, 'Invalid sessionid cookie');
+			$this->error(401, 'Invalid sessionid cookie');
 		}
 
 		if (!$this->db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
-			$this->error(400, 'User does not exist');
+			$this->error(401, 'User does not exist');
 		}
 
 		$this->user = $_SESSION['user'];
