@@ -186,20 +186,20 @@ class API
 			return;
 		}
 
-		if (empty($_COOKIE['sessionid']) && isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
+		if (isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
 			$this->login();
 			$this->user = $_SESSION['user'];
 			return;
 		}
 
 		if (empty($_COOKIE['sessionid'])) {
-			$this->error(401, 'session cookie is required' . print_r([$_POST, $_SERVER], true));
+			$this->error(401, 'session cookie is required');
 		}
 
 		@session_start();
 
 		if (empty($_SESSION['user'])) {
-			$this->error(401, 'Invalid sessionid cookie');
+			$this->error(401, 'Expired sessionid cookie, and no Authorization header was provided');
 		}
 
 		if (!$this->db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
