@@ -174,14 +174,22 @@ elseif ($gpodder->user && $api->url === 'subscriptions') {
 			echo '<p class="help">No information is available on this feed.</p>';
 		}
 
-		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
+		echo '<table><thead><tr><th scope="col">Action</th><th scope="col">Data</th><th scope="col">Device</th><th scope="col">Date</th><th scope="col">Episode</td></tr></thead><tbody>';
 
 		foreach ($gpodder->listActions((int)$_GET['id']) as $row) {
 			$url = strtok(basename($row->url), '?');
 			strtok('');
 			$title = $row->title ?? $url;
-			printf('<tr><th scope="row">%s</th><td>%s</td><td><time datetime="%s">%s</time></td><td><a href="%s">%s</a></td></tr>',
+			$data = json_decode($row->data);
+			$actionData = "";
+
+			if ($row->action == "play") {
+				$actionData = "Position: " . $data->position;
+			}
+
+			printf('<tr><th scope="row">%s</th><td>%s</td><td>%s</td><td><time datetime="%s">%s</time></td><td><a href="%s">%s</a></td></tr>',
 				htmlspecialchars($row->action),
+				htmlspecialchars($actionData),
 				htmlspecialchars($row->device_name ?? '?'),
 				date(DATE_ISO8601, $row->changed),
 				date('d/m/Y H:i', $row->changed),
