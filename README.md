@@ -139,8 +139,10 @@ Please also note: the username "current" always points to the currently logged-i
 
 This server has been tested so far with:
 
-* AntennaPod 2.6.1 (both GPodder API and NextCloud API) - Android
-* gPodder 3.10.17 - Debian (requires a specific token, see above!)
+* [AntennaPod](https://github.com/AntennaPod/AntennaPod) 2.6.1 (both GPodder API and NextCloud API) - Android
+* [gPodder](https://gpodder.github.io/) 3.10.17 - Debian (requires a specific token, see above!)
+* [Kasts](https://invent.kde.org/multimedia/kasts) 21.08 - Linux/Windows/Android
+* [PinePods](https://github.com/madeofpendletonwool/PinePods) 0.6.1 - WebServer
 
 Please report if apps work (or not) with other clients.
 
