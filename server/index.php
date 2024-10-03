@@ -50,6 +50,10 @@ set_exception_handler(function ($e) {
 	exit;
 });
 
+if (!defined('DEBUG')) {
+	define('DEBUG', null);
+}
+
 // Fix issues with badly configured web servers
 if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
 	@list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
@@ -69,10 +73,6 @@ if (file_exists(DATA_ROOT . '/config.local.php')) {
 
 if (!defined('ENABLE_SUBSCRIPTIONS')) {
 	define('ENABLE_SUBSCRIPTIONS', false);
-}
-
-if (!defined('DEBUG')) {
-	define('DEBUG', null);
 }
 
 if (!defined('DISABLE_USER_METADATA_UPDATE')) {
