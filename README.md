@@ -8,6 +8,9 @@ This allows you to keep track of which episodes have been listened to.
 
 Requires PHP 7.4+ and SQLite3 with JSON1 extension.
 
+* Main development happens on Fossil: <https://fossil.kd2.org/opodsync/>
+* Github mirror: <https://github.com/kd2org/opodsync> (PR and issues accepted)
+
 ## Features
 
 * Compatible with [GPodder](https://gpoddernet.readthedocs.io/en/latest/api/reference/) and NextCloud [gPodder Sync](https://apps.nextcloud.com/apps/gpoddersync) APIs
@@ -48,7 +51,7 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-In order to run oPodSync with Docker you only need to build the `Dockerfile` and run it while binding the `data` directory for persistence and setting the hostname. An example `docker-compose.yml` is provided.
+See [Docker Hub](https://hub.docker.com/search?q=opodsync) to find community distribution for Docker.
 
 ### Configuration
 
