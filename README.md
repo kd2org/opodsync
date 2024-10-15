@@ -51,7 +51,7 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-See [Docker Hub](https://hub.docker.com/search?q=opodsync) to find community distribution for Docker.
+See [Docker Hub](https://hub.docker.com/search?q=opodsync) to find community distribution for Docker. Please don't report Docker issues here, this repository is only for software development.
 
 ### Configuration
 
