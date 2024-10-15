@@ -31,7 +31,7 @@ set_exception_handler(function ($e) {
 
 	error_log((string) $e);
 
-	if (DEBUG) {
+	if (defined('DEBUG') && DEBUG) {
 		echo $e;
 
 		global $backtrace;
