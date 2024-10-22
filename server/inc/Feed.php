@@ -142,8 +142,9 @@ class Feed
 			return null;
 		}
 
-		if (false !== strpos($str, ':')) {
+		if (false !== strpos($str, ':') && ctype_digit(str_replace(':', '', trim($str)))) {
 			$parts = explode(':', $str);
+			$parts = array_map('intval', $parts);
 			$duration = ($parts[2] ?? 0) * 3600 + ($parts[1] ?? 0) * 60 + $parts[0] ?? 0;
 		}
 		else {
