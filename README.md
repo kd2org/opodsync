@@ -79,6 +79,12 @@ const BASE_URL = 'https://gpodder.mydomain.tld/me/';
 // as this may add some load on your server
 // (default is FALSE)
 const DISABLE_USER_METADATA_UPDATE = true;
+
+// Disable passwordless, token-based authentication.
+// This is intended to support GPodder desktop which does not support passwords.
+// If you don't need this support, it may be a bit of a security issue to leave on,
+// so you may turn it off here:
+const DISABLE_TOKEN_AUTHENTICATION = true;
 ```
 
 ### Fetching and updating feeds metadata
@@ -111,6 +117,8 @@ gPodder (the [desktop client](https://gpodder.github.io), not the gpodder.net se
 This means that you have to use a unique secret token as the username.
 
 This token is displayed when you log in. Use it as the username in gPodder configuration.
+
+If you don't need this type of authentication, set `DISABLE_TOKEN_AUTHENTICATION` to true in `config.local.php`.
 
 ## APIs
 

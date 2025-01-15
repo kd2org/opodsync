@@ -79,6 +79,10 @@ if (!defined('DISABLE_USER_METADATA_UPDATE')) {
 	define('DISABLE_USER_METADATA_UPDATE', false);
 }
 
+if (!defined('DISABLE_TOKEN_AUTHENTICATION')) {
+	define('DISABLE_TOKEN_AUTHENTICATION', false);
+}
+
 $db = new DB(DATA_ROOT . '/data.sqlite');
 $api = new API($db);
 
@@ -226,8 +230,10 @@ elseif ($gpodder->user) {
 
 	echo '<p class="center"><img src="icon.svg" width="150" alt="" /></p>';
 	printf('<h2 class="center">Logged in as %s</h2>', $gpodder->user->name);
-	printf('<h3 class="center">GPodder secret username: %s</h2>', $gpodder->getUserToken());
-	echo '<p class="center"><small>(Use this username in GPodder desktop, as it does not support passwords.)</small></p>';
+	if (!DISABLE_TOKEN_AUTHENTICATION) {
+		printf('<h3 class="center">GPodder secret username: %s</h2>', $gpodder->getUserToken());
+		echo '<p class="center"><small>(Use this username in GPodder desktop, as it does not support passwords.)</small></p>';
+	}
 	printf('<p class="center">You have %d active subscriptions.</p><p class="center"><a href="subscriptions" class="btn sm">List my subscriptions</a></p>', $gpodder->countActiveSubscriptions());
 
 	echo '<p class="center"><a href="logout" class="btn sm">Logout</a></p>';

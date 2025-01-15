@@ -60,6 +60,10 @@ class GPodder
 
 	public function validateToken(string $username): bool
 	{
+		if (DISABLE_TOKEN_AUTHENTICATION) {
+			return false;
+		}
+
 		$login = strtok($username, '__');
 		$token = strtok('');
 
