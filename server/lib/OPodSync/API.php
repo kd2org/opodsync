@@ -607,10 +607,18 @@ class API
 				$id = $db->lastInsertRowID();
 			}
 
+			if (!empty($action->timestamp)) {
+				$changed = new \DateTime($action->timestamp, new \DateTimeZone('UTC'));
+				$changed = $changed->getTimestamp();
+			}
+			else {
+				$changed = null;
+			}
+
 			$st->bindValue(':user', $this->user->id);
 			$st->bindValue(':subscription', $id);
 			$st->bindValue(':url', $action->episode);
-			$st->bindValue(':changed', !empty($action->timestamp) ? strtotime($action->timestamp) : $timestamp);
+			$st->bindValue(':changed', $changed ?? $timestamp);
 			$st->bindValue(':action', strtolower($action->action));
 			unset($action->action, $action->episode, $action->podcast);
 			$st->bindValue(':data', json_encode($action, JSON_THROW_ON_ERROR));
