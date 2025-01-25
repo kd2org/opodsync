@@ -86,7 +86,7 @@ gPodder (the [desktop client](https://gpodder.github.io), not the gpodder.net se
 
 This means that you have to use a unique secret token as the username.
 
-This token is displayed when you log in. Use it as the username in gPodder configuration.
+This token can be created when you log in. Use it as the username in gPodder configuration. Be warned that this username is replacing your password, so it lowers the security of your account.
 
 ## APIs
 

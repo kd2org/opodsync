@@ -141,7 +141,7 @@ class API
 
 		if ($action === 'logout') {
 			$_SESSION = [];
-			session_destroy();
+			@session_destroy();
 			$this->error(200, 'Logged out');
 		}
 		elseif ($action !== 'login') {

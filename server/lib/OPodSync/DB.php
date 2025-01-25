@@ -50,6 +50,7 @@ class DB extends \SQLite3
 
 	public function install() {
 		$this->exec(file_get_contents(ROOT . '/sql/schema.sql'));
+		$this->simple(sprintf('PRAGMA user_version = %d;', self::VERSION));
 	}
 
 	public function migrate() {
@@ -76,7 +77,6 @@ class DB extends \SQLite3
 			$gpodder = new GPodder;
 			$gpodder->logout();
 		}
-
 
 		$this->simple(sprintf('PRAGMA user_version = %d;', self::VERSION));
 	}

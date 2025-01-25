@@ -72,5 +72,3 @@ CREATE TABLE episodes_actions (
 
 CREATE INDEX episodes_idx ON episodes_actions (user, action, changed);
 CREATE INDEX episodes_actions_link ON episodes_actions (episode);
-
-PRAGMA user_version = 20240428;
