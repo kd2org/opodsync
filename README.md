@@ -55,31 +55,7 @@ See [Docker Hub](https://hub.docker.com/search?q=opodsync) to find community dis
 
 ### Configuration
 
-You can create a `config.local.php` in the `data` directory (overridable with the `DATA_ROOT` environment variable), defining configuration constants:
-
-```
-<?php
-
-// Enable or disable subscriptions (boolean)
-// By default the server allows to create one account
-// and then disables subscriptions
-const ENABLE_SUBSCRIPTIONS = true;
-
-// Set to a file path to enable the debug log
-// Set to NULL (default) to disable the debug log
-const DEBUG = __DIR__ . '/debug.log';
-
-// Set to change the instance name
-const TITLE = 'My awesome GPodder server';
-
-// Set to the URL where the server is hosted
-const BASE_URL = 'https://gpodder.mydomain.tld/me/';
-
-// Set this to TRUE to forbid users from updating feed metadata,
-// as this may add some load on your server
-// (default is FALSE)
-const DISABLE_USER_METADATA_UPDATE = true;
-```
+You can copy the `config.dist.php` to `data/config.local.php`, and edit it to suit your needs.
 
 ### Fetching and updating feeds metadata
 

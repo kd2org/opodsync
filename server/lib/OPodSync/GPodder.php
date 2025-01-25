@@ -1,13 +1,16 @@
 <?php
 
+namespace OPodSync;
+
+use stdClass;
+
 class GPodder
 {
-	protected DB $db;
-	public ?\stdClass $user = null;
+	public ?stdClass $user = null;
 
-	public function __construct(DB $db)
+	public function __construct()
 	{
-		$this->db = $db;
+		session_name('sessionid');
 
 		if (!empty($_POST['login']) || isset($_COOKIE[session_name()])) {
 			if (isset($_GET['token']) && ctype_alnum($_GET['token'])) {
@@ -28,7 +31,8 @@ class GPodder
 			return null;
 		}
 
-		$user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
+		$db = DB::getInstance();
+		$user = $db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
 
 		if (!$user || !password_verify(trim($_POST['password']), $user->password ?? '')) {
 			return 'Invalid username/password';
@@ -43,6 +47,11 @@ class GPodder
 		return null;
 	}
 
+	protected function refreshSession(): void
+	{
+		$_SESSION['user'] = $this->user = DB::getInstance()->firstRow('SELECT * FROM users WHERE id = ?;', $this->user->id);
+	}
+
 	public function isLogged(): bool
 	{
 		return !empty($_SESSION['user']);
@@ -53,9 +62,26 @@ class GPodder
 		session_destroy();
 	}
 
-	public function getUserToken(): string
+	public function enableToken(): void
 	{
-		return $this->user->name . '__' . substr(sha1($this->user->password), 0, 10);
+		$token = substr(sha1(random_bytes(16)), 0, 10);
+		DB::getInstance()->simple('UPDATE users SET token = ? WHERE id = ?;', $token, $this->user->id);
+		$this->refreshSession();
+	}
+
+	public function disableToken(): void
+	{
+		DB::getInstance()->simple('UPDATE users SET token = NULL WHERE id = ?;', $this->user->id);
+		$this->refreshSession();
+	}
+
+	public function getUserToken(): ?string
+	{
+		if (null === $this->user->token) {
+			return null;
+		}
+
+		return $this->user->name . '__' . $this->user->token;
 	}
 
 	public function validateToken(string $username): bool
@@ -63,13 +89,10 @@ class GPodder
 		$login = strtok($username, '__');
 		$token = strtok('');
 
-		$this->user = $this->db->firstRow('SELECT * FROM users WHERE name = ?;', $login);
+		$db = DB::getInstance();
+		$this->user = $db->firstRow('SELECT * FROM users WHERE name = ? AND token = ?;', $login, $token);
 
-		if (!$this->user) {
-			return false;
-		}
-
-		return $username === $this->getUserToken();
+		return $this->user !== null;
 	}
 
 	public function canSubscribe(): bool
@@ -78,7 +101,8 @@ class GPodder
 			return true;
 		}
 
-		if (!$this->db->firstColumn('SELECT COUNT(*) FROM users;')) {
+		$db = DB::getInstance();
+		if (!$db->firstColumn('SELECT COUNT(*) FROM users;')) {
 			return true;
 		}
 
@@ -96,16 +120,17 @@ class GPodder
 		}
 
 		$password = trim($password);
+		$db = DB::getInstance();
 
 		if (strlen($password) < 8) {
 			return 'Password is too short';
 		}
 
-		if ($this->db->firstColumn('SELECT 1 FROM users WHERE name = ?;', $name)) {
+		if ($db->firstColumn('SELECT 1 FROM users WHERE name = ?;', $name)) {
 			return 'Username already exists';
 		}
 
-		$this->db->simple('INSERT INTO users (name, password) VALUES (?, ?);', trim($name), password_hash($password, null));
+		$db->simple('INSERT INTO users (name, password) VALUES (?, ?);', trim($name), password_hash($password, null));
 		return null;
 	}
 
@@ -136,12 +161,14 @@ class GPodder
 
 	public function countActiveSubscriptions(): int
 	{
-		return $this->db->firstColumn('SELECT COUNT(*) FROM subscriptions WHERE user = ? AND deleted = 0;', $this->user->id);
+		$db = DB::getInstance();
+		return $db->firstColumn('SELECT COUNT(*) FROM subscriptions WHERE user = ? AND deleted = 0;', $this->user->id);
 	}
 
 	public function listActiveSubscriptions(): array
 	{
-		return $this->db->all('SELECT s.*, COUNT(a.rowid) AS count, f.title, COALESCE(MAX(a.changed), s.changed) AS last_change
+		$db = DB::getInstance();
+		return $db->all('SELECT s.*, COUNT(a.rowid) AS count, f.title, COALESCE(MAX(a.changed), s.changed) AS last_change
 			FROM subscriptions s
 				LEFT JOIN episodes_actions a ON a.subscription = s.id
 				LEFT JOIN feeds f ON f.id = s.feed
@@ -152,7 +179,8 @@ class GPodder
 
 	public function listActions(int $subscription): array
 	{
-		return $this->db->all('SELECT a.*,
+		$db = DB::getInstance();
+		return $db->all('SELECT a.*,
 				d.name AS device_name,
 				e.title,
 				e.url AS episode_url
@@ -165,7 +193,8 @@ class GPodder
 
 	public function updateFeedForSubscription(int $subscription): ?Feed
 	{
-		$url = $this->db->firstColumn('SELECT url FROM subscriptions WHERE id = ?;', $subscription);
+		$db = DB::getInstance();
+		$url = $db->firstColumn('SELECT url FROM subscriptions WHERE id = ?;', $subscription);
 
 		if (!$url) {
 			return null;
@@ -177,14 +206,15 @@ class GPodder
 			return null;
 		}
 
-		$feed->sync($this->db);
+		$feed->sync();
 
 		return $feed;
 	}
 
 	public function getFeedForSubscription(int $subscription): ?Feed
 	{
-		$data = $this->db->firstRow('SELECT f.*
+		$db = DB::getInstance();
+		$data = $db->firstRow('SELECT f.*
 			FROM subscriptions s INNER JOIN feeds f ON f.id = s.feed
 			WHERE s.id = ?;', $subscription);
 
@@ -211,7 +241,9 @@ class GPodder
 		@ob_implicit_flush(true);
 		$i = 0;
 
-		foreach ($this->db->iterate($sql) as $row) {
+		$db = DB::getInstance();
+
+		foreach ($db->iterate($sql) as $row) {
 			@set_time_limit(30); // Extend running time;
 
 			if ($cli) {

@@ -1,7 +1,9 @@
 # Make sure Authorization header is transmitted to PHP
 SetEnvIf Authorization .+ HTTP_AUTHORIZATION=$0
 
-RedirectMatch 404 inc/.*
+RedirectMatch 404 lib/.*
 RedirectMatch 404 data/.*
+RedirectMatch 404 templates/.*
+RedirectMatch 404 sql/.*
 
 FallbackResource /index.php

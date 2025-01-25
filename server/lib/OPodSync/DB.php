@@ -1,14 +1,44 @@
 <?php
 
+namespace OPodSync;
+
 class DB extends \SQLite3
 {
+	const VERSION = 20250125;
+
 	protected $statements = [];
+
+	static protected $instance;
+
+	static public function getInstance(): self
+	{
+		if (!isset(self::$instance)) {
+			self::$instance = new self(DB_FILE);
+		}
+
+		return self::$instance;
+	}
 
 	public function __construct(string $file)
 	{
 		$setup = !file_exists($file);
 
 		parent::__construct($file);
+
+		$mode = strtoupper(SQLITE_JOURNAL_MODE);
+		$set_mode = $this->querySingle('PRAGMA journal_mode;');
+		$set_mode = strtoupper($set_mode);
+
+		if ($set_mode !== $mode) {
+			// WAL = performance enhancement
+			// see https://www.cs.utexas.edu/~jaya/slides/apsys17-sqlite-slides.pdf
+			// https://ericdraken.com/sqlite-performance-testing/
+			$this->exec(sprintf(
+				'PRAGMA journal_mode = %s; PRAGMA synchronous = NORMAL; PRAGMA journal_size_limit = %d;',
+				$mode,
+				32 * 1024 * 1024
+			));
+		}
 
 		if ($setup) {
 			$this->install();
@@ -19,18 +49,36 @@ class DB extends \SQLite3
 	}
 
 	public function install() {
-		$this->exec(file_get_contents(__DIR__ . '/schema.sql'));
+		$this->exec(file_get_contents(ROOT . '/sql/schema.sql'));
 	}
 
 	public function migrate() {
 		$v = $this->firstColumn('PRAGMA user_version;');
 
-		if (!$v) {
-			$this->exec(file_get_contents(__DIR__ . '/migration_20240428.sql'));
-			$v = 20240428;
+		if ($v < self::VERSION) {
+			$list = glob(ROOT . '/sql/migration_*.sql');
+			sort($list);
+
+			foreach ($list as $file) {
+				if (!preg_match('!/migration_(.*?)\.sql$!', $file, $match)) {
+					continue;
+				}
+
+				$file_version = $match[1];
+
+				if ($file_version && $file_version <= self::VERSION && $file_version > $v) {
+					$this->exec(file_get_contents($file));
+				}
+			}
+
+			// Destroy session, just to make sure that there is no bug between user data in session
+			// and user data in DB
+			$gpodder = new GPodder;
+			$gpodder->logout();
 		}
 
-		$this->simple(sprintf('PRAGMA user_version = %d;', $v));
+
+		$this->simple(sprintf('PRAGMA user_version = %d;', self::VERSION));
 	}
 
 	public function upsert(string $table, array $params, array $conflict_columns)

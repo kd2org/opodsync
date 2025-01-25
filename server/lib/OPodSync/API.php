@@ -1,5 +1,9 @@
 <?php
 
+namespace OPodSync;
+
+use stdClass;
+
 class API
 {
 	protected ?string $method;
@@ -10,12 +14,10 @@ class API
 	public ?string $base_path;
 	protected ?string $path;
 	protected ?string $format = null;
-	protected DB $db;
+	protected string $log = '';
 
-	public function __construct(DB $db)
+	public function __construct()
 	{
-		session_name('sessionid');
-		$this->db = $db;
 		$url = defined('BASE_URL') ? BASE_URL : null;
 		$url ??= getenv('BASE_URL', true) ?: null;
 
@@ -53,15 +55,25 @@ class API
 
 	public function debug(string $message, ...$params): void
 	{
-		if (!DEBUG) {
+		if (!DEBUG_LOG) {
 			return;
 		}
 
-		file_put_contents(DEBUG, date('Y-m-d H:i:s ') . vsprintf($message, $params) . PHP_EOL, FILE_APPEND);
+		$this->log .= date('Y-m-d H:i:s ') . vsprintf($message, $params) . PHP_EOL;
+	}
+
+	public function __destruct()
+	{
+		if (!DEBUG_LOG || $this->log === '') {
+			return;
+		}
+
+		file_put_contents(DEBUG_LOG, $this->log, FILE_APPEND);
 	}
 
 	public function queryWithData(string $sql, ...$params): array {
-		$result = $this->db->iterate($sql, ...$params);
+		$db = DB::getInstance();
+		$result = $db->iterate($sql, ...$params);
 		$out = [];
 
 		foreach ($result as $row) {
@@ -150,7 +162,8 @@ class API
 		$login = $_SERVER['PHP_AUTH_USER'];
 		list($login) = explode('__', $login, 2);
 
-		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $login);
+		$db = DB::getInstance();
+		$user = $db->firstRow('SELECT id, password FROM users WHERE name = ?;', $login);
 
 		if(!$user) {
 			$this->error(401, 'Invalid username');
@@ -177,7 +190,7 @@ class API
 
 		// For gPodder desktop
 		if ($username && false !== strpos($username, '__')) {
-			$gpodder = new GPodder($this->db);
+			$gpodder = new GPodder;
 			if (!$gpodder->validateToken($username)) {
 				$this->error(401, 'Invalid gpodder token');
 			}
@@ -202,7 +215,9 @@ class API
 			$this->error(401, 'Expired sessionid cookie, and no Authorization header was provided');
 		}
 
-		if (!$this->db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
+		$db = DB::getInstance();
+
+		if (!$db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
 			$this->error(401, 'User does not exist');
 		}
 
@@ -295,7 +310,8 @@ class API
 
 		$this->debug('Nextcloud compatibility: %s / %s', $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
 
-		$user = $this->db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
+		$db = DB::getInstance();
+		$user = $db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
 
 		if (!$user) {
 			$this->error(401, 'Invalid username');
@@ -428,7 +444,8 @@ class API
 				'user'     => $this->user->id,
 			];
 
-			$this->db->upsert('devices', $params, ['deviceid', 'user']);
+			$db = DB::getInstance();
+			$db->upsert('devices', $params, ['deviceid', 'user']);
 			$this->error(200, 'Device updated');
 		}
 		$this->error(400, 'Wrong request method');
@@ -440,13 +457,17 @@ class API
 	 */
 	public function subscriptions()
 	{
+		$db = DB::getInstance();
 		$v2 = strpos($this->url, 'api/2/') !== false;
 
 		// We don't care about deviceid yet (FIXME)
 		$deviceid = explode('/', $this->path)[1] ?? null;
 
 		if ($this->method === 'GET' && !$v2) {
-			return $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ?;', $this->user->id);
+			return $db->all('SELECT s.url AS feed, f.title, f.url AS website, f.description
+				FROM subscriptions s
+				LEFT JOIN feeds f ON f.id = s.feed
+				WHERE s.user = ?;', $this->user->id);
 		}
 
 		if (!$deviceid || !preg_match('/^[\w.-]+$/', $deviceid)) {
@@ -458,8 +479,8 @@ class API
 			$timestamp = (int)($_GET['since'] ?? 0);
 
 			return [
-				'add' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 0 AND changed >= ?;', $this->user->id, $timestamp),
-				'remove' => $this->db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 1 AND changed >= ?;', $this->user->id, $timestamp),
+				'add' => $db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 0 AND changed >= ?;', $this->user->id, $timestamp),
+				'remove' => $db->rowsFirstColumn('SELECT url FROM subscriptions WHERE user = ? AND deleted = 1 AND changed >= ?;', $this->user->id, $timestamp),
 				'update_urls' => [],
 				'timestamp' => time(),
 			];
@@ -472,8 +493,8 @@ class API
 				$this->error(400, 'Invalid input: requires an array with one line per feed');
 			}
 
-			$this->db->exec('BEGIN;');
-			$st = $this->db->prepare('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (:user, :url, strftime(\'%s\', \'now\'));');
+			$db->exec('BEGIN;');
+			$st = $db->prepare('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (:user, :url, strftime(\'%s\', \'now\'));');
 
 			foreach ($lines as $url) {
 				$this->validateURL($url);
@@ -485,14 +506,14 @@ class API
 				$st->clear();
 			}
 
-			$this->db->exec('END;');
+			$db->exec('END;');
 			return null;
 		}
 
 		if ($this->method === 'POST') {
 			$input = $this->getInput();
 
-			$this->db->exec('BEGIN;');
+			$db->exec('BEGIN;');
 
 			$ts = time();
 
@@ -500,7 +521,7 @@ class API
 				foreach ($input->add as $url) {
 					$this->validateURL($url);
 
-					$this->db->upsert('subscriptions', [
+					$db->upsert('subscriptions', [
 						'user'    => $this->user->id,
 						'url'     => $url,
 						'changed' => $ts,
@@ -513,7 +534,7 @@ class API
 				foreach ($input->remove as $url) {
 					$this->validateURL($url);
 
-					$this->db->upsert('subscriptions', [
+					$db->upsert('subscriptions', [
 						'user'    => $this->user->id,
 						'url'     => $url,
 						'changed' => $ts,
@@ -522,7 +543,7 @@ class API
 				}
 			}
 
-			$this->db->exec('END;');
+			$db->exec('END;');
 			return ['timestamp' => $ts, 'update_urls' => []];
 		}
 
@@ -565,10 +586,11 @@ class API
 			$this->error(400, 'No valid array found');
 		}
 
-		$this->db->exec('BEGIN;');
+		$db = DB::getInstance();
+		$db->exec('BEGIN;');
 
 		$timestamp = time();
-		$st = $this->db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data) VALUES (:user, :subscription, :url, :changed, :action, :data);');
+		$st = $db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data) VALUES (:user, :subscription, :url, :changed, :action, :data);');
 
 		foreach ($input as $action) {
 			if (!isset($action->podcast, $action->action, $action->episode)) {
@@ -578,11 +600,11 @@ class API
 			$this->validateURL($action->podcast);
 			$this->validateURL($action->episode);
 
-			$id = $this->db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user->id);
+			$id = $db->firstColumn('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $action->podcast, $this->user->id);
 
 			if (!$id) {
-				$this->db->simple('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user->id, $action->podcast, $timestamp);
-				$id = $this->db->lastInsertRowID();
+				$db->simple('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (?, ?, ?);', $this->user->id, $action->podcast, $timestamp);
+				$id = $db->lastInsertRowID();
 			}
 
 			$st->bindValue(':user', $this->user->id);
@@ -597,7 +619,7 @@ class API
 			$st->clear();
 		}
 
-		$this->db->exec('END;');
+		$db->exec('END;');
 
 		return compact('timestamp') + ['update_urls' => []];
 	}
@@ -608,8 +630,12 @@ class API
 		$out .= PHP_EOL . '<opml version="1.0"><head><title>My Feeds</title></head><body>';
 
 		foreach ($data as $row) {
-			$out .= PHP_EOL . sprintf('<outline type="rss" xmlUrl="%s" />',
-					htmlspecialchars($row ?? '', ENT_XML1)
+			$url = $row->website ?? $row->feed;
+			$out .= PHP_EOL . sprintf('<outline type="rss" xmlUrl="%s" title="%s" text="%2$s" htmlUrl="%s" description="%s" />',
+					htmlspecialchars($row->feed, ENT_XML1 | ENT_QUOTES),
+					htmlspecialchars($row->title ?? $url, ENT_XML1 | ENT_QUOTES),
+					htmlspecialchars($url, ENT_XML1 | ENT_QUOTES),
+					htmlspecialchars($row->description ?? '', ENT_XML1 | ENT_QUOTES),
 				);
 		}
 

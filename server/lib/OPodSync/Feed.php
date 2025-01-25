@@ -1,5 +1,7 @@
 <?php
 
+namespace OPodSync;
+
 class Feed
 {
 	public ?string $feed_url = null;
@@ -32,8 +34,9 @@ class Feed
 		}
 	}
 
-	public function sync(DB $db): void
+	public function sync(): void
 	{
+		$db = DB::getInstance();
 		$db->exec('BEGIN;');
 		$db->upsert('feeds', $this->export(), ['feed_url']);
 		$feed_id = $db->firstColumn('SELECT id FROM feeds WHERE feed_url = ?;', $this->feed_url);

@@ -29,7 +29,8 @@ CREATE UNIQUE INDEX episodes_unique ON episodes (feed, media_url);
 CREATE TABLE users (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
-	password TEXT NOT NULL
+	password TEXT NOT NULL,
+	token TEXT NULL
 );
 
 CREATE UNIQUE INDEX users_name ON users (name);

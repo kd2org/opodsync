@@ -29,7 +29,7 @@ input[size] {
 	min-width: 0;
 }
 
-input[type=submit], .btn {
+.btn {
 	border: none;
 	cursor: pointer;
 	padding: .5em;
@@ -53,7 +53,7 @@ input:focus {
 	outline: none;
 }
 
-input[type=submit]:hover, .btn:hover {
+.btn:hover {
 	box-shadow: 0 0 10px orange;
 }
 
@@ -204,6 +204,16 @@ table a {
 
 time {
 	white-space: pre;
+}
+
+nav ul {
+	list-style-type: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 1em;
+	margin: 2em 0;
+	font-size: 1.2em;
 }
 
 @media screen and (max-width: 900px) {
