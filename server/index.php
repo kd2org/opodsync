@@ -2,11 +2,14 @@
 
 namespace OPodSync;
 
+$uri = strtok($_SERVER['REQUEST_URI'], '?');
+strtok('');
+
 // Stop here if we are using CLI server and the requested resource exists,
 // it will be served by PHP HTTP server
 if (PHP_SAPI === 'cli-server'
-	&& file_exists(__DIR__ . $_SERVER['REQUEST_URI'])
-	&& !is_dir(__DIR__ . $_SERVER['REQUEST_URI'])) {
+	&& file_exists(__DIR__ . $uri)
+	&& !is_dir(__DIR__ . $uri)) {
 	return false;
 }
 
