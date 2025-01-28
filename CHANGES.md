@@ -1,3 +1,8 @@
+## 0.4.1
+
+* Fix CSS loading issue with php-cli webserver
+* Fix session_destroy call during migration
+
 ## 0.4.0
 
 Warning: If you had an old `config.local.php` from pre-0.4 version, it will not work anymore (the namespace has changed). You should edit it to suit the new format, see `config.dist.php` for an example.
