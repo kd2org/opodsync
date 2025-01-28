@@ -59,7 +59,7 @@ class GPodder
 
 	public function logout(): void
 	{
-		session_destroy();
+		@session_destroy();
 	}
 
 	public function enableToken(): void
