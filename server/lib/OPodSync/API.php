@@ -18,7 +18,7 @@ class API
 
 	public function __construct()
 	{
-		$url = defined('BASE_URL') ? BASE_URL : null;
+		$url = defined(__NAMESPACE__ . '\\BASE_URL') ? BASE_URL : null;
 		$url ??= getenv('BASE_URL', true) ?: null;
 
 		if (!$url) {
