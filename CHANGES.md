@@ -1,3 +1,7 @@
+## 0.4.2
+
+* Fix DATA_ROOT env
+
 ## 0.4.1
 
 * Fix CSS loading issue with php-cli webserver
