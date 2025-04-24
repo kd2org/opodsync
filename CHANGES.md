@@ -1,3 +1,7 @@
+## 0.4.3
+
+* Fix GPodder token parsing (thanks @sezuan)
+
 ## 0.4.2
 
 * Fix DATA_ROOT env
