@@ -662,7 +662,15 @@ class ErrorManager
 		$out = [];
 		$start = max(0, $line - 5);
 
-		if (!file_exists($file)) {
+		try {
+			// Make sure we ignore errors here, as file_exists can trigger an error from open_basedir
+			$exists = file_exists($file);
+		}
+		catch (\Throwable $e) {
+			$exists = false;
+		}
+
+		if (!$exists) {
 			return [$line => 'Source file not found'];
 		}
 
