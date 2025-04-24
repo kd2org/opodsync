@@ -86,8 +86,14 @@ class GPodder
 
 	public function validateToken(string $username): bool
 	{
-		$login = strtok($username, '__');
-		$token = strtok('');
+		$pos = strrpos($username, '__');
+
+		if ($pos === false) {
+			return false;
+		}
+
+		$login = substr($username, 0, $pos);
+		$token = substr($username, $pos+2);
 
 		$db = DB::getInstance();
 		$this->user = $db->firstRow('SELECT * FROM users WHERE name = ? AND token = ?;', $login, $token);
