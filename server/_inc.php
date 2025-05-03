@@ -66,6 +66,12 @@ if (ERRORS_REPORT_URL) {
 	ErrorManager::setRemoteReporting(ERRORS_REPORT_URL, true);
 }
 
+if (!is_dir(DATA_ROOT)) {
+	if (!@mkdir(DATA_ROOT, fileperms(ROOT), true)) {
+		throw new \RuntimeException('Unable to create directory, please create it and allow this program to write inside: ' . DATA_ROOT);
+	}
+}
+
 // Fix issues with badly configured web servers
 if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
 	@list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
