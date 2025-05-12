@@ -19,7 +19,7 @@ if (!empty($_POST)) {
 
 		if (!$error) {
 			$gpodder->login();
-			header('Location: ./user.php');
+			header('Location: ./');
 			exit;
 		}
 	}
