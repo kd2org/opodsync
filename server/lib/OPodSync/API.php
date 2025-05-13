@@ -273,7 +273,7 @@ class API
 					'token' => $id,
 					'endpoint' => $this->url('index.php/login/v2/poll'),
 				],
-				'login' => $this->url('login?token=' . $id),
+				'login' => $this->url('login.php?token=' . $id),
 			];
 		}
 
