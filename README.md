@@ -51,7 +51,7 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-There is an unofficial [Docker image available](https://github.com/ganeshlab/opodsync). Please report any Docker issue there.
+There is an unofficial [Docker image available](https://hub.docker.com/r/ganeshlab/opodsync). Please report any Docker issue there.
 
 If this image stops being maintained, see [Docker Hub](https://hub.docker.com/search?q=opodsync) to find other community distribution for Docker.
 
