@@ -1,3 +1,7 @@
+## 0.4.4
+
+* Fix login.php redirect (thanks @mx1up)
+
 ## 0.4.3
 
 * Fix GPodder token parsing (thanks @sezuan)
