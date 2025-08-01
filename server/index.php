@@ -49,6 +49,7 @@ if ($gpodder->user) {
 	$tpl->display('index_logged.tpl');
 }
 else {
+	$tpl->assign('canSubscribe', $gpodder->canSubscribe());
 	$tpl->display('index.tpl');
 }
 
