@@ -13,6 +13,10 @@ if (isset($_GET['logout'])) {
 $token = isset($_GET['token']) ? '?oktoken' : '';
 $error = $gpodder->login();
 
+if ($error) {
+    http_response_code(401);
+}
+
 if ($gpodder->isLogged()) {
 	header('Location: ./' . $token);
 	exit;
