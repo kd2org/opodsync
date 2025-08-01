@@ -365,8 +365,12 @@ class API
 			exit;
 		}
 
+		if (!preg_match('!api(?:/|$)!', $this->url)) {
+        	return;
+		}
+
 		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data))/!', $this->url, $match)) {
-			return;
+			$this->error(400, 'Unknown or malformed API request');
 		}
 
 		$this->section = $match[2] ?? $match[1];
