@@ -365,7 +365,7 @@ class API
 			exit;
 		}
 
-		if (!preg_match('!api(?:/|$)!', $this->url)) {
+		if (!preg_match('!^(?:api(?:/|$)|subscriptions/|suggestions/|toplist/)!', $this->url)) {
         	return;
 		}
 
