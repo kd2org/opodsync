@@ -1,7 +1,7 @@
 {include file="_head.tpl"}
 
 <p class="center">
-	<a href="./subscriptions" class="btn sm" aria-label="Go Back">&larr; Back</a>
+	<a href="./subscriptions.php" class="btn sm" aria-label="Go Back">&larr; Back</a>
 </p>
 
 {if isset($feed->url, $feed->title, $feed->description)}
