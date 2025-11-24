@@ -143,13 +143,16 @@ class API
 			$_SESSION = [];
 			@session_destroy();
 			$this->error(200, 'Logged out');
+			return;
 		}
 		elseif ($action !== 'login') {
 			$this->error(404, 'Unknown login action: ' . $action);
+			return;
 		}
 
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
 			$this->error(401, 'No username or password provided');
+			return;
 		}
 
 		$this->requireAuth();
@@ -157,7 +160,7 @@ class API
 		$this->error(200, 'Logged in!');
 	}
 
-	public function login()
+	public function login(): void
 	{
 		$login = $_SERVER['PHP_AUTH_USER'];
 		list($login) = explode('__', $login, 2);
@@ -167,10 +170,12 @@ class API
 
 		if(!$user) {
 			$this->error(401, 'Invalid username');
+			return;
 		}
 
 		if (!password_verify($_SERVER['PHP_AUTH_PW'], $user->password ?? '')) {
 			$this->error(401, 'Invalid username/password');
+			return;
 		}
 
 		$this->debug('Logged user: %s', $login);
@@ -193,6 +198,7 @@ class API
 			$gpodder = new GPodder;
 			if (!$gpodder->validateToken($username)) {
 				$this->error(401, 'Invalid gpodder token');
+				return;
 			}
 
 			$this->user = $gpodder->user;
@@ -207,18 +213,21 @@ class API
 
 		if (empty($_COOKIE['sessionid'])) {
 			$this->error(401, 'session cookie is required');
+			return;
 		}
 
 		@session_start();
 
 		if (empty($_SESSION['user'])) {
 			$this->error(401, 'Expired sessionid cookie, and no Authorization header was provided');
+			return;
 		}
 
 		$db = DB::getInstance();
 
 		if (!$db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
 			$this->error(401, 'User does not exist');
+			return;
 		}
 
 		$this->user = $_SESSION['user'];
@@ -251,6 +260,7 @@ class API
 			case 'lists':
 			case 'sync-device':
 				$this->error(503, 'Not implemented');
+				return;
 			default:
 				return null;
 		}
@@ -282,6 +292,7 @@ class API
 
 			if (empty($_POST['token']) || !ctype_alnum($_POST['token'])) {
 				$this->error(400, 'Invalid token');
+				return null;
 			}
 
 			session_id($_POST['token']);
@@ -289,6 +300,7 @@ class API
 
 			if (empty($_SESSION['user']) || empty($_SESSION['app_password'])) {
 				$this->error(404, 'Not logged in yet, using token: ' . $_POST['token']);
+				return null;
 			}
 
 			return [
@@ -306,6 +318,7 @@ class API
 
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
 			$this->error(401, 'No username or password provided');
+			return null;
 		}
 
 		$this->debug('Nextcloud compatibility: %s / %s', $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
@@ -315,6 +328,7 @@ class API
 
 		if (!$user) {
 			$this->error(401, 'Invalid username');
+			return null;
 		}
 
 		// FIXME store a real app password instead of this hack
@@ -324,6 +338,7 @@ class API
 
 		if ($app_password !== $password) {
 			$this->error(401, 'Invalid username/password');
+			return null;
 		}
 
 		$this->user = $_SESSION['user'] = $user;
@@ -341,6 +356,7 @@ class API
 		}
 		else {
 			$this->error(404, 'Undefined Nextcloud API endpoint');
+			return null;
 		}
 
 		return null;
@@ -365,7 +381,12 @@ class API
 			exit;
 		}
 
-		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data))/!', $this->url, $match)) {
+		if (!preg_match('!^(?:api|subscriptions|suggestions|toplist)/?$!', $this->url)) {
+			return;
+		}
+
+		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data)?)/!', $this->url, $match)) {
+			$this->error(404, 'Unknown or malformed API request');
 			return;
 		}
 

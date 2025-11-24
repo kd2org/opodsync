@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * This is an example config for oPodSync
+ * It should be copied to `config.local.php` and placed in the `server/data` directory.
+ */
+
 namespace OPodSync;
 
 /**
