@@ -81,6 +81,7 @@ DB::getInstance();
 $gpodder = new GPodder;
 
 $tpl = new Smartyer;
+$tpl->setNamespace(__NAMESPACE__);
 $tpl->setCompiledDir(CACHE_ROOT . '/templates');
 $tpl->setTemplatesDir(ROOT . '/templates');
 $tpl->assign('title', TITLE);
