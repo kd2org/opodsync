@@ -1,3 +1,7 @@
+## 0.4.5 (November 2025)
+
+* Implement various small cosmetic PRs
+
 ## 0.4.4
 
 * Fix login.php redirect (thanks @mx1up)
