@@ -18,6 +18,10 @@ if ($gpodder->isLogged()) {
 	exit;
 }
 
+if ($error) {
+	http_response_code(401);
+}
+
 $token = isset($_GET['token']) ? true : false;
 
 $tpl->assign(compact('error', 'token'));
