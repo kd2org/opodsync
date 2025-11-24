@@ -126,6 +126,7 @@ This server has been tested so far with:
 * [gPodder](https://gpodder.github.io/) 3.10.17 - Debian (requires a specific token, see above!)
 * [Kasts](https://invent.kde.org/multimedia/kasts) 21.08 - Linux/Windows/Android
 * [PinePods](https://github.com/madeofpendletonwool/PinePods) 0.6.1 - WebServer
+* [Music Assistant](https://www.music-assistant.io/music-providers/gpodder/) (according to their documentation)
 
 Please report if apps work (or not) with other clients.
 
