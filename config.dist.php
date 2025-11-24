@@ -137,3 +137,4 @@ const ERRORS_REPORT_URL = null;
  * Default: null (= disabled)
  * @var string|null
  */
+const DEBUG_LOG = DATA_ROOT . '/debug.log';
