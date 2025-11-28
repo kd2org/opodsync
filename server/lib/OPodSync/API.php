@@ -134,7 +134,6 @@ class API
 			return json_decode($input, false, 512, JSON_THROW_ON_ERROR);
 		}
 		catch (\JsonException $e) {
-			var_dump($input); exit;
 			throw new APIException('Malformed JSON: ' . $e->getMessage(), 400);
 		}
 	}
