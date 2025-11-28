@@ -25,17 +25,20 @@ if (file_exists($cfg_file)) {
 	require $cfg_file;
 }
 
+$data_root = defined(__NAMESPACE__ . '\DATA_ROOT') ? constant(__NAMESPACE__ . '\DATA_ROOT') : (getenv('DATA_ROOT') ?: ROOT . '/data');
+
 // Default configuration constants
 $defaults = [
 	'ENABLE_SUBSCRIPTIONS'         => false,
+	'ENABLE_SUBSCRIPTION_CAPTCHA'  => true,
 	'DISABLE_USER_METADATA_UPDATE' => false,
-	'DATA_ROOT'                    => getenv('DATA_ROOT') ?: ROOT . '/data',
-	'CACHE_ROOT'                   => ROOT . '/data/cache',
-	'DB_FILE'                      => ROOT . '/data/data.sqlite',
+	'DATA_ROOT'                    => $data_root,
+	'CACHE_ROOT'                   => $data_root . '/cache',
+	'DB_FILE'                      => $data_root . '/data.sqlite',
 	'SQLITE_JOURNAL_MODE'          => 'TRUNCATE',
 	'ERRORS_SHOW'                  => true,
 	'ERRORS_EMAIL'                 => null,
-	'ERRORS_LOG'                   => ROOT . '/data/error.log',
+	'ERRORS_LOG'                   => $data_root . '/error.log',
 	'ERRORS_REPORT_URL'            => null,
 	'TITLE'                        => 'My oPodSync server',
 	'DEBUG_LOG'                    => null,

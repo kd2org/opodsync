@@ -15,20 +15,32 @@ if (PHP_SAPI === 'cli-server'
 
 require_once __DIR__ . '/_inc.php';
 
-// Try to handle API requests first
-$api = new API;
-
 try {
-	if ($api->handleRequest()) {
+	// Try to handle API requests first
+	$api = new API;
+	$uri = $api->getRequestURI();
+
+	if ($api->handleRequest($uri)) {
 		return;
 	}
-} catch (JsonException $e) {
+}
+catch (APIException $e) {
+	$api->error($e);
 	return;
 }
 
 if (PHP_SAPI === 'cli') {
 	$gpodder->updateAllFeeds(true);
 	exit(0);
+}
+
+$uri = trim($uri, '/');
+
+// Return 404 is URI is invalid
+if (!in_array($uri, ['', 'index.php'], true)) {
+	http_response_code(404);
+	echo '<h1>404 Not Found</h1>';
+	exit;
 }
 
 if ($gpodder->user) {

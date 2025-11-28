@@ -71,7 +71,8 @@ class API
 		file_put_contents(DEBUG_LOG, $this->log, FILE_APPEND);
 	}
 
-	public function queryWithData(string $sql, ...$params): array {
+	public function queryWithData(string $sql, ...$params): array
+	{
 		$db = DB::getInstance();
 		$result = $db->iterate($sql, ...$params);
 		$out = [];
@@ -85,54 +86,63 @@ class API
 		return $out;
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function error(int $code, string $message): void {
+	public function error(APIException $e): void
+	{
+		$code = $e->getCode();
+		$message = $e->getMessage();
 		$this->debug('RETURN: %d - %s', $code, $message);
 
 		http_response_code($code);
 		header('Content-Type: application/json', true);
-		echo json_encode(compact('code', 'message'), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
-		exit;
+
+		try {
+			echo json_encode(compact('code', 'message'), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+		}
+		catch (\JsonException $e) {
+			echo json_encode($e->getMessage());
+		}
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function requireMethod(string $method): void {
+	public function requireMethod(string $method): void
+	{
 		if ($method !== $this->method) {
-			$this->error(405, 'Invalid HTTP method: ' . $this->method);
+			throw new APIException('Invalid HTTP method: ' . $this->method, 405);
 		}
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function validateURL(string $url): void {
+	public function validateURL(string $url): void
+	{
 		if (!preg_match('!^https?://[^/]+!', $url)) {
-			$this->error(400, 'Invalid URL: ' . $url);
+			throw new APIException('Invalid URL: ' . $url, 400);
 		}
 	}
 
-	/**
-	 * @throws JsonException
-	 */
 	public function getInput()
 	{
 		if ($this->format === 'txt') {
 			return array_filter(file('php://input'), 'trim');
 		}
+		elseif ($this->format === 'opml'
+			|| $this->format === 'xml'
+			|| $this->format === 'jsonp') {
+			throw new APIException('Only JSON format is supported for input', 501);
+		}
 
 		$input = file_get_contents('php://input');
-		return json_decode($input, false, 512, JSON_THROW_ON_ERROR);
+
+		try {
+			return json_decode($input, false, 512, JSON_THROW_ON_ERROR);
+		}
+		catch (\JsonException $e) {
+			var_dump($input); exit;
+			throw new APIException('Malformed JSON: ' . $e->getMessage(), 400);
+		}
 	}
 
 	/**
 	 * @see https://gpoddernet.readthedocs.io/en/latest/api/reference/auth.html
-	 * @throws JsonException
 	 */
-	public function handleAuth(): void
+	public function handleAuth(): null
 	{
 		$this->requireMethod('POST');
 
@@ -142,25 +152,22 @@ class API
 		if ($action === 'logout') {
 			$_SESSION = [];
 			@session_destroy();
-			$this->error(200, 'Logged out');
-			return;
+			throw new APIException('Logged out', 200);
 		}
 		elseif ($action !== 'login') {
-			$this->error(404, 'Unknown login action: ' . $action);
-			return;
+			throw new APIException('Unknown login action: ' . $action, 404);
 		}
 
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
-			$this->error(401, 'No username or password provided');
-			return;
+			throw new APIException('No username or password provided', 401);
 		}
 
 		$this->requireAuth();
 
-		$this->error(200, 'Logged in!');
+		throw new APIException('Logged in!', 200);
 	}
 
-	public function login(): void
+	public function login(): ?stdClass
 	{
 		$login = $_SERVER['PHP_AUTH_USER'];
 		list($login) = explode('__', $login, 2);
@@ -169,75 +176,64 @@ class API
 		$user = $db->firstRow('SELECT id, password FROM users WHERE name = ?;', $login);
 
 		if(!$user) {
-			$this->error(401, 'Invalid username');
-			return;
+			throw new APIException('Invalid username', 401);
 		}
 
 		if (!password_verify($_SERVER['PHP_AUTH_PW'], $user->password ?? '')) {
-			$this->error(401, 'Invalid username/password');
-			return;
+			throw new APIException('Invalid username/password', 401);
 		}
 
 		$this->debug('Logged user: %s', $login);
 
 		@session_start();
 		$_SESSION['user'] = $user;
+		$this->user = $user;
+		return $user;
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function requireAuth(?string $username = null): void
+	public function requireAuth(?string $username = null): ?stdClass
 	{
 		if (isset($this->user)) {
-			return;
+			return null;
 		}
 
 		// For gPodder desktop
 		if ($username && false !== strpos($username, '__')) {
 			$gpodder = new GPodder;
 			if (!$gpodder->validateToken($username)) {
-				$this->error(401, 'Invalid gpodder token');
-				return;
+				throw new APIException('Invalid gpodder token', 401);
 			}
 
 			$this->user = $gpodder->user;
-			return;
+			return null;
 		}
 
 		if (isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) {
-			$this->login();
-			$this->user = $_SESSION['user'];
-			return;
+			return $this->login();
 		}
 
 		if (empty($_COOKIE['sessionid'])) {
-			$this->error(401, 'session cookie is required');
-			return;
+			throw new APIException('session cookie is required', 401);
 		}
 
 		@session_start();
 
 		if (empty($_SESSION['user'])) {
-			$this->error(401, 'Expired sessionid cookie, and no Authorization header was provided');
-			return;
+			throw new APIException('Expired sessionid cookie, and no Authorization header was provided', 401);
 		}
 
 		$db = DB::getInstance();
 
 		if (!$db->firstColumn('SELECT 1 FROM users WHERE id = ?;', $_SESSION['user']->id)) {
-			$this->error(401, 'User does not exist');
-			return;
+			throw new APIException('User does not exist', 401);
 		}
 
 		$this->user = $_SESSION['user'];
 		$this->debug('Cookie user ID: %s', $this->user->id);
+		return $this->user;
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function route()
+	public function route(string $url): ?array
 	{
 		switch ($this->section) {
 			// Not implemented
@@ -253,14 +249,13 @@ class API
 			case 'updates':
 				return $this->updates();
 			case 'subscriptions':
-				return $this->subscriptions();
+				return $this->subscriptions($url);
 			case 'episodes':
 				return $this->episodes();
 			case 'settings':
 			case 'lists':
 			case 'sync-device':
-				$this->error(503, 'Not implemented');
-				return;
+				throw new APIException('Not implemented', 503);
 			default:
 				return null;
 		}
@@ -269,16 +264,19 @@ class API
 	/**
 	 * Map NextCloud endpoints to GPodder
 	 * @see https://github.com/thrillfall/nextcloud-gpodder
-	 * @throws JsonException
+	 * @throws APIException
+	 * @return bool TRUE if the routing should be stopped
 	 */
-	public function handleNextCloud(): ?array
+	public function routeNextCloud(string &$url): bool
 	{
-		if ($this->url === 'index.php/login/v2') {
+		$nextcloud_path = 'index.php/apps/gpoddersync/';
+
+		if ($url === 'index.php/login/v2') {
 			$this->requireMethod('POST');
 
 			$id = sha1(random_bytes(16));
 
-			return [
+			$r = [
 				'poll' => [
 					'token' => $id,
 					'endpoint' => $this->url('index.php/login/v2/poll'),
@@ -286,39 +284,38 @@ class API
 				'login' => $this->url('login.php?token=' . $id),
 			];
 		}
-
-		if ($this->url === 'index.php/login/v2/poll') {
+		elseif ($url === 'index.php/login/v2/poll') {
 			$this->requireMethod('POST');
 
 			if (empty($_POST['token']) || !ctype_alnum($_POST['token'])) {
-				$this->error(400, 'Invalid token');
-				return null;
+				throw new APIException('Invalid token', 400);
 			}
 
 			session_id($_POST['token']);
 			session_start();
 
 			if (empty($_SESSION['user']) || empty($_SESSION['app_password'])) {
-				$this->error(404, 'Not logged in yet, using token: ' . $_POST['token']);
-				return null;
+				throw new APIException('Not logged in yet, using token: ' . $_POST['token'], 404);
 			}
 
-			return [
+			$r = [
 				'server' => $this->url(),
 				'loginName' => $_SESSION['user']->name,
 				'appPassword' => $_SESSION['app_password'], // FIXME provide a real app-password here
 			];
 		}
+		// This is not a nextcloud route
+		elseif (0 !== strpos($url, $nextcloud_path)) {
+			return false;
+		}
 
-		$nextcloud_path = 'index.php/apps/gpoddersync/';
-
-		if (0 !== strpos($this->url, $nextcloud_path)) {
-			return null;
+		if (null !== $r) {
+			echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+			return true;
 		}
 
 		if (empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) {
-			$this->error(401, 'No username or password provided');
-			return null;
+			throw new APIException('No username or password provided', 401);
 		}
 
 		$this->debug('Nextcloud compatibility: %s / %s', $_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
@@ -327,8 +324,7 @@ class API
 		$user = $db->firstRow('SELECT id, password FROM users WHERE name = ?;', $_SERVER['PHP_AUTH_USER']);
 
 		if (!$user) {
-			$this->error(401, 'Invalid username');
-			return null;
+			throw new APIException('Invalid username', 401);
 		}
 
 		// FIXME store a real app password instead of this hack
@@ -337,70 +333,70 @@ class API
 		$app_password = sha1($user->password . $token);
 
 		if ($app_password !== $password) {
-			$this->error(401, 'Invalid username/password');
-			return null;
+			throw new APIException('Invalid username/password', 401);
 		}
 
 		$this->user = $_SESSION['user'] = $user;
 
-		$path = substr($this->url, strlen($nextcloud_path));
+		$path = substr($url, strlen($nextcloud_path));
 
+		// Modify the URL to match regular Gpodder endpoints
 		if ($path === 'subscriptions') {
-			$this->url = 'api/2/subscriptions/current/default.json';
+			$url = 'api/2/subscriptions/current/default.json';
 		}
 		elseif ($path === 'subscription_change/create') {
-			$this->url = 'api/2/subscriptions/current/default.json';
+			$url = 'api/2/subscriptions/current/default.json';
 		}
 		elseif ($path === 'episode_action' || $path === 'episode_action/create') {
-			$this->url = 'api/2/episodes/current.json';
+			$url = 'api/2/episodes/current.json';
 		}
 		else {
-			$this->error(404, 'Undefined Nextcloud API endpoint');
-			return null;
+			throw new APIException('Undefined Nextcloud API endpoint', 404);
 		}
 
-		return null;
+		return false;
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function handleRequest(): void
+	public function getRequestURI(): string
 	{
-		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
 		$url = '/' . trim($_SERVER['REQUEST_URI'] ?? '', '/');
 		$url = substr($url, strlen($this->base_path));
-		$this->url = strtok($url, '?');
+		$url = strtok($url, '?');
+		strtok('');
+		return $url;
+	}
 
-		$this->debug('Got a %s request on %s', $this->method, $this->url);
+	public function handleRequest(string $url): bool
+	{
+		$this->method = $_SERVER['REQUEST_METHOD'] ?? null;
 
-		$return = $this->handleNextCloud();
+		$this->debug('Got a %s request on %s', $this->method, $url);
 
-		if ($return) {
-			echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
-			exit;
+		$stop = $this->routeNextCloud($url);
+
+		if ($stop) {
+			return true;
 		}
 
-		if (!preg_match('!^(?:api|subscriptions|suggestions|toplist)/?!', $this->url)) {
-			return;
+		if (!preg_match('!^(?:api|subscriptions|suggestions|toplist)/?!', $url)) {
+			return false;
 		}
 
-		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data)?)/!', $this->url, $match)) {
-			$this->error(404, 'Unknown or malformed API request');
-			return;
+		if (!preg_match('!^(suggestions|subscriptions|toplist|api/2/(auth|subscriptions|devices|updates|episodes|favorites|settings|lists|sync-devices|tags?|data)?)/!', $url, $match)) {
+			throw new APIException('Unknown or malformed API request', 404);
 		}
 
 		$this->section = $match[2] ?? $match[1];
-		$this->path = substr($this->url, strlen($match[0]));
+		$this->path = substr($url, strlen($match[0]));
 		$username = null;
 
-		if (preg_match('/\.(json|opml|txt|jsonp|xml)$/', $this->url, $match)) {
+		if (preg_match('/\.(json|opml|txt|jsonp|xml)$/', $url, $match)) {
 			$this->format = $match[1];
 			$this->path = substr($this->path, 0, -strlen($match[0]));
 		}
 
 		if (!in_array($this->format, ['json', 'opml', 'txt'])) {
-			$this->error(501, 'output format is not implemented');
+			throw new APIException('output format is not implemented', 501);
 		}
 
 		// For gPodder
@@ -410,18 +406,17 @@ class API
 
 		if ($this->section === 'auth') {
 			$this->handleAuth();
-			return;
 		}
 
 		$this->requireAuth($username);
 
-		$return = $this->route();
+		$return = $this->route($url);
 
 		$this->debug("RETURN:\n%s", json_encode($return, JSON_PRETTY_PRINT));
 
 		if ($this->format === 'opml') {
 			if ($this->section !== 'subscriptions') {
-				$this->error(501, 'output format is not implemented');
+				throw new APIException('output format is not implemented', 501);
 			}
 
 			header('Content-Type: text/x-opml; charset=utf-8');
@@ -435,12 +430,9 @@ class API
 			}
 		}
 
-		exit;
+		return true;
 	}
 
-	/**
-	 * @throws JsonException
-	 */
 	public function devices(): array
 	{
 		if ($this->method === 'GET') {
@@ -451,7 +443,7 @@ class API
 			$deviceid = explode('/', $this->path)[1] ?? null;
 
 			if (!$deviceid || !preg_match('/^[\w.-]+$/', $deviceid)) {
-				$this->error(400, 'Invalid device ID');
+				throw new APIException('Invalid device ID', 400);
 			}
 
 			$json = $this->getInput();
@@ -467,19 +459,16 @@ class API
 
 			$db = DB::getInstance();
 			$db->upsert('devices', $params, ['deviceid', 'user']);
-			$this->error(200, 'Device updated');
+			throw new APIException('Device updated', 200);
 		}
-		$this->error(400, 'Wrong request method');
-		exit;
+
+		throw new APIException('Wrong request method', 400);
 	}
 
-	/**
-	 * @throws JsonException
-	 */
-	public function subscriptions()
+	public function subscriptions(string $url): ?array
 	{
 		$db = DB::getInstance();
-		$v2 = strpos($this->url, 'api/2/') !== false;
+		$v2 = strpos($url, 'api/2/') !== false;
 
 		// We don't care about deviceid yet (FIXME)
 		$deviceid = explode('/', $this->path)[1] ?? null;
@@ -492,7 +481,7 @@ class API
 		}
 
 		if (!$deviceid || !preg_match('/^[\w.-]+$/', $deviceid)) {
-			$this->error(400, 'Invalid device ID');
+			throw new APIException('Invalid device ID', 400);
 		}
 
 		// Get Subscription Changes
@@ -506,18 +495,18 @@ class API
 				'timestamp' => time(),
 			];
 		}
-
-		if ($this->method === 'PUT') {
+		elseif ($this->method === 'PUT') {
 			$lines = $this->getInput();
 
 			if (!is_array($lines)) {
-				$this->error(400, 'Invalid input: requires an array with one line per feed');
+				throw new APIException('Invalid input: requires an array with one line per feed', 400);
 			}
 
 			$db->exec('BEGIN;');
 			$st = $db->prepare('INSERT OR IGNORE INTO subscriptions (user, url, changed) VALUES (:user, :url, strftime(\'%s\', \'now\'));');
 
 			foreach ($lines as $url) {
+				$url = is_object($url) ? $url->feed : $url;
 				$this->validateURL($url);
 
 				$st->bindValue(':url', $url);
@@ -530,8 +519,7 @@ class API
 			$db->exec('END;');
 			return null;
 		}
-
-		if ($this->method === 'POST') {
+		elseif ($this->method === 'POST') {
 			$input = $this->getInput();
 
 			$db->exec('BEGIN;');
@@ -568,22 +556,14 @@ class API
 			return ['timestamp' => $ts, 'update_urls' => []];
 		}
 
-		$this->error(501, 'Not implemented yet');
-		exit;
+		throw new APIException('Not implemented yet', 501);
 	}
 
-	/**
-	 * @throws JsonException
-	 */
 	public function updates(): mixed
 	{
-		$this->error(501, 'Not implemented yet');
-		exit;
+		throw new APIException('Not implemented yet', 501);
 	}
 
-	/**
-	 * @throws JsonException
-	 */
 	public function episodes(): array
 	{
 		if ($this->method === 'GET') {
@@ -604,7 +584,7 @@ class API
 		$input = $this->getInput();
 
 		if (!is_array($input)) {
-			$this->error(400, 'No valid array found');
+			throw new APIException('No valid array found', 400);
 		}
 
 		$db = DB::getInstance();
@@ -615,7 +595,7 @@ class API
 
 		foreach ($input as $action) {
 			if (!isset($action->podcast, $action->action, $action->episode)) {
-				$this->error(400, 'Missing required key in action');
+				throw new APIException('Missing required key in action', 400);
 			}
 
 			$this->validateURL($action->podcast);
