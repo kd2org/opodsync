@@ -45,8 +45,7 @@ pcntl_signal(SIGINT, function() use ($proc) {
 	exit;
 });
 
-echo $pid;
-sleep(1);
+usleep(500);
 
 $http = new HTTP;
 $http->url_prefix = $url;
