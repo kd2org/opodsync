@@ -1,6 +1,6 @@
 ## 0.4.7 (29 November 2025)
 
-* Add some client tests
+* Add some client tests (still incomplete)
 * Refactor API error and route handling
 
 ## 0.4.6 (28 November 2025)
