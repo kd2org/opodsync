@@ -1,3 +1,7 @@
+## 0.4.6 (November 2025)
+
+* Fix various warnings for PHP 8.5 compatibility (please report any issue)
+
 ## 0.4.5 (November 2025)
 
 * Implement various small cosmetic PRs

@@ -1328,7 +1328,12 @@ class Smartyer
 			return date(constant($format), $date);
 		}
 
-		return @strftime($format, $date);
+		if (method_exists('\KD2\Translate', 'strftime')) {
+			return \KD2\Translate::strftime($format, $date);
+		}
+		elseif (function_exists('strftime')) {
+			return @strftime($format, $date);
+		}
 	}
 
 	/**

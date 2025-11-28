@@ -1,8 +1,4 @@
-.PHONY : server docker-test
+.PHONY : server
 
 server:
 	php -S localhost:8080 -t server server/index.php
-
-docker-test:
-	docker-compose down --rmi all -v
-	docker-compose up

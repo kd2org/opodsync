@@ -15,7 +15,7 @@ spl_autoload_register(function ($class) {
 // Enable exception handler in dev mode before we load the config file
 ErrorManager::enable(ErrorManager::DEVELOPMENT);
 
-ErrorManager::setLogFile(ROOT . 'error.log');
+ErrorManager::setLogFile(ROOT . '/error.log');
 
 class UserException extends \Exception {}
 
