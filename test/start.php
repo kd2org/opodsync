@@ -23,29 +23,23 @@ mkdir($data_root);
 $root = realpath(__DIR__ . '/../server');
 
 $cmd = sprintf(
-	'DATA_ROOT=%s php -S %s -d variables_order=EGPCS -t %s %s &',
+	'DATA_ROOT=%s php -S %s -d variables_order=EGPCS -t %s %s > /dev/null 2>&1 & echo $!',
 	escapeshellarg($data_root),
 	escapeshellarg($server),
 	escapeshellarg($root),
 	escapeshellarg($root . '/index.php')
 );
 
-declare(ticks = 1);
-$descriptorspec = [
-    0 => ['pipe', 'r'],
-    1 => ['pipe', 'w'],
-    2 => ['pipe', 'w']
-];
-$proc = proc_open($cmd, $descriptorspec, $pipes);
-$proc_details = proc_get_status($proc);
-$pid = $proc_details['pid'];
+$pid = shell_exec($cmd);
 
-pcntl_signal(SIGINT, function() use ($proc) {
-	proc_close($proc);
+sleep(1);
+
+declare(ticks = 1);
+
+pcntl_signal(SIGINT, function() use ($pid) {
+	shell_exec('kill ' . $pid);
 	exit;
 });
-
-usleep(500);
 
 $http = new HTTP;
 $http->url_prefix = $url;
@@ -53,10 +47,14 @@ $http->http_options['timeout'] = 2;
 $list = glob(__DIR__ . '/tests/*.php');
 natcasesort($list);
 
-foreach ($list as $file) {
-	require $file;
+try {
+	foreach ($list as $file) {
+		require $file;
+	}
 }
-
+finally {
+	shell_exec('kill ' . $pid);
+}
 
 function dom(string $html) {
 	$doc = new HTMLDocument;

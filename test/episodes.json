@@ -1,0 +1,18 @@
+[
+		{
+				"action": "download",
+				"device": "test-device",
+				"episode": "http://example.com/files/s01e20.mp3",
+				"podcast": "http://example.com/feed.rss",
+				"timestamp": "2009-12-12T09:00:00"
+		},
+		{
+				"action": "play",
+				"device": "test-device",
+				"episode": "http://ftp.example.org/foo.ogg",
+				"podcast": "http://example.org/podcast.php",
+				"position": 120,
+				"started": 15,
+				"total": 500
+		}
+]
