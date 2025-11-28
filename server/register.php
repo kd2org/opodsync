@@ -15,7 +15,7 @@ if (!empty($_POST)) {
 		$error = 'Invalid captcha';
 	}
 	else {
-		$error = $gpodder->subscribe($_POST['username'] ?? '', $_POST['password'] ?? '');
+		$error = $gpodder->subscribe($_POST['login'] ?? '', $_POST['password'] ?? '');
 
 		if (!$error) {
 			$gpodder->login();

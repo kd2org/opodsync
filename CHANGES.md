@@ -1,5 +1,7 @@
 ## 0.4.6 (November 2025)
 
+* Fix register button was hidden when no user existed
+* Fix login after registration
 * Fix various warnings for PHP 8.5 compatibility (please report any issue)
 
 ## 0.4.5 (November 2025)

@@ -8,8 +8,8 @@
 	<fieldset>
 		<legend>Create an account</legend>
 		<dl>
-			<dt><label for="username">Username</label></dt>
-			<dd><input type="text" name="username" required id="username" /></dd>
+			<dt><label for="login">Username</label></dt>
+			<dd><input type="text" name="login" required id="login" /></dd>
 			<dt><label for="password">Password (minimum 8 characters)</label></dt>
 			<dd><input type="password" minlength="8" required name="password" id="password" /></dd>
 			<dt>Captcha</dt>
