@@ -93,6 +93,9 @@ class API
 		$this->debug('RETURN: %d - %s', $code, $message);
 
 		http_response_code($code);
+		if ($code == 401) {
+			header('WWW-Authenticate: Basic realm="' . TITLE . '"');
+		}
 		header('Content-Type: application/json', true);
 
 		try {
