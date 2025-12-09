@@ -95,6 +95,10 @@ class API
 		http_response_code($code);
 		header('Content-Type: application/json', true);
 
+		if ($code === 401) {
+			header('WWW-Authenticate: Basic realm="Please login"');
+		}
+
 		try {
 			echo json_encode(compact('code', 'message'), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
 		}
