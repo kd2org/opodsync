@@ -32,6 +32,7 @@ $defaults = [
 	'ENABLE_SUBSCRIPTIONS'         => false,
 	'ENABLE_SUBSCRIPTION_CAPTCHA'  => true,
 	'DISABLE_USER_METADATA_UPDATE' => false,
+	'KARADAV_URL'                  => null,
 	'DATA_ROOT'                    => $data_root,
 	'CACHE_ROOT'                   => $data_root . '/cache',
 	'DB_FILE'                      => $data_root . '/data.sqlite',
@@ -48,6 +49,15 @@ foreach ($defaults as $const => $value) {
 	if (!defined(__NAMESPACE__ . '\\' . $const)) {
 		define(__NAMESPACE__ . '\\' . $const, $value);
 	}
+}
+
+if (!defined(__NAMESPACE__ . '\WWW_URL')) {
+	$https = (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443) ? 's' : '';
+	$name = $_SERVER['SERVER_NAME'];
+	$port = !in_array($_SERVER['SERVER_PORT'], [80, 443]) ? ':' . $_SERVER['SERVER_PORT'] : '';
+	$root = '/';
+
+	define(__NAMESPACE__ . '\WWW_URL', sprintf('http%s://%s%s%s', $https, $name, $port, $root));
 }
 
 if (!ERRORS_SHOW) {
@@ -89,6 +99,7 @@ $tpl->setTemplatesDir(ROOT . '/templates');
 $tpl->assign('title', TITLE);
 $tpl->assign('can_update_feeds', !DISABLE_USER_METADATA_UPDATE);
 $tpl->assign('user', $gpodder->user);
+$tpl->assign('url', WWW_URL);
 $tpl->register_modifier('format_description', [Utils::class, 'format_description']);
 
 

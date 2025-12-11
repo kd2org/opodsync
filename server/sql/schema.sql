@@ -30,10 +30,11 @@ CREATE TABLE users (
 	id INTEGER NOT NULL PRIMARY KEY,
 	name TEXT NOT NULL,
 	password TEXT NOT NULL,
-	token TEXT NULL
+	token TEXT NULL,
+	external_user_id INTEGER NULL
 );
 
-CREATE UNIQUE INDEX users_name ON users (name);
+CREATE UNIQUE INDEX users_unique ON users (name, external_user_id);
 
 CREATE TABLE devices (
 	id INTEGER NOT NULL PRIMARY KEY,

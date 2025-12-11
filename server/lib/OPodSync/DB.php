@@ -4,7 +4,7 @@ namespace OPodSync;
 
 class DB extends \SQLite3
 {
-	const VERSION = 20250125;
+	const VERSION = 20251211;
 
 	protected $statements = [];
 

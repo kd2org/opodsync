@@ -69,7 +69,8 @@ fieldset {
 	text-align: center;
 	border: 3px solid #005c97;
 	border-radius: 1em;
-	padding: 2em;
+	padding: 1em;
+	margin: 2em;
 }
 
 legend {

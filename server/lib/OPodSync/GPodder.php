@@ -10,9 +10,29 @@ class GPodder
 
 	public function __construct()
 	{
+		$this->startSession();
+	}
+
+	public function startSession(bool $force = false, bool $external = false): void
+	{
+		if (isset($_SESSION)) {
+			return;
+		}
+
+		$options = [
+			'secure'   => true,
+			'httponly' => true,
+		];
+
+		if ($external) {
+			$options['samesite'] = 'None';
+		}
+
+		session_set_cookie_params($options);
+
 		session_name('sessionid');
 
-		if (!empty($_POST['login']) || isset($_COOKIE[session_name()])) {
+		if ($force || isset($_COOKIE[session_name()])) {
 			if (isset($_GET['token']) && ctype_alnum($_GET['token'])) {
 				session_id($_GET['token']);
 			}
@@ -25,6 +45,39 @@ class GPodder
 		}
 	}
 
+	public function loginExternal(string $id): void
+	{
+		$r = file_get_contents(rtrim(KARADAV_URL, '/') . '/session.php?id=' . rawurlencode($id));
+		$r = json_decode($r);
+
+		if (!$r || !isset($r->user->login, $r->user->id)) {
+			return;
+		}
+
+		$db = DB::getInstance();
+
+		$user = $db->firstRow('SELECT * FROM users WHERE external_user_id = ?;', $r->user->id);
+
+		if (!$user) {
+			$db->simple('INSERT INTO users (name, password, external_user_id) VALUES (?, ?, ?);',
+				trim($r->user->login),
+				'',
+				$r->user->id
+			);
+		}
+		elseif ($user->name !== $r->user->login) {
+			$db->simple('UPDATE users SET name = ? WHERE external_user_id = ?;',
+				trim($r->user->login),
+				$r->user->id
+			);
+		}
+
+		$user ??= $db->firstRow('SELECT * FROM users WHERE external_user_id = ?;', $r->user->id);
+
+		$this->startSession(true, true);
+		$_SESSION['user'] = $this->user = $user;
+	}
+
 	public function login(): ?string
 	{
 		if (empty($_POST['login']) || empty($_POST['password'])) {
@@ -32,12 +85,13 @@ class GPodder
 		}
 
 		$db = DB::getInstance();
-		$user = $db->firstRow('SELECT * FROM users WHERE name = ?;', trim($_POST['login']));
+		$user = $db->firstRow('SELECT * FROM users WHERE name = ? AND external_user_id IS NULL;', trim($_POST['login']));
 
 		if (!$user || !password_verify(trim($_POST['password']), $user->password ?? '')) {
 			return 'Invalid username/password';
 		}
 
+		$this->startSession(true);
 		$_SESSION['user'] = $this->user = $user;
 
 		if (!empty($_GET['token'])) {
@@ -132,7 +186,7 @@ class GPodder
 			return 'Password is too short';
 		}
 
-		if ($db->firstColumn('SELECT 1 FROM users WHERE name = ?;', $name)) {
+		if ($db->firstColumn('SELECT 1 FROM users WHERE name = ? AND external_user_id IS NULL;', $name)) {
 			return 'Username already exists';
 		}
 

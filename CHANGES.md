@@ -1,3 +1,8 @@
+## 0.5.0 (11 December 2025)
+
+* Add URL of instance on homepage, with copy button
+* Add support for being used as an external app inside KaraDAV
+
 ## 0.4.7 (29 November 2025)
 
 * Add some client tests (still incomplete)

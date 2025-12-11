@@ -2,8 +2,7 @@
 
 namespace OPodSync;
 
-$uri = strtok($_SERVER['REQUEST_URI'], '?');
-strtok('');
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Stop here if we are using CLI server and the requested resource exists,
 // it will be served by PHP HTTP server
@@ -41,6 +40,11 @@ if (!in_array($uri, ['', 'index.php'], true)) {
 	http_response_code(404);
 	echo '<h1>404 Not Found</h1>';
 	exit;
+}
+
+if (KARADAV_URL && isset($_GET['ext_sessionid'])) {
+	$gpodder->loginExternal($_GET['ext_sessionid']);
+	$tpl->assign('user', $gpodder->user);
 }
 
 if ($gpodder->user) {
