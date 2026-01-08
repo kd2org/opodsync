@@ -287,6 +287,41 @@ class GPodder
 		return $feed;
 	}
 
+	public function addSubscription(string $url): ?string
+	{
+		$url = trim($url);
+
+		if (!preg_match('!^https?://[^/]+!', $url)) {
+			return 'Invalid URL. Must start with http:// or https://';
+		}
+
+		$db = DB::getInstance();
+
+		// Check if already subscribed
+		$existing = $db->firstRow('SELECT id, deleted FROM subscriptions WHERE url = ? AND user = ?;', $url, $this->user->id);
+
+		if ($existing && !$existing->deleted) {
+			return 'You are already subscribed to this feed.';
+		}
+
+		$db->upsert('subscriptions', [
+			'user'    => $this->user->id,
+			'url'     => $url,
+			'changed' => time(),
+			'deleted' => 0,
+		], ['user', 'url']);
+
+		return null;
+	}
+
+	public function removeSubscription(int $id): bool
+	{
+		$db = DB::getInstance();
+		$db->simple('UPDATE subscriptions SET deleted = 1, changed = ? WHERE id = ? AND user = ?;',
+			time(), $id, $this->user->id);
+		return $db->changes() > 0;
+	}
+
 	public function updateAllFeeds(bool $cli = false): void
 	{
 		$sql = 'SELECT s.id AS subscription, s.url, MAX(a.changed) AS changed
