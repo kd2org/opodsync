@@ -311,6 +311,12 @@ class GPodder
 			'deleted' => 0,
 		], ['user', 'url']);
 
+		// Get the subscription ID and fetch feed metadata
+		$subscription = $db->firstRow('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $url, $this->user->id);
+		if ($subscription) {
+			$this->updateFeedForSubscription($subscription->id);
+		}
+
 		return null;
 	}
 
