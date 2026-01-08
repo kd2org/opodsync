@@ -251,6 +251,16 @@ class GPodder
 			ORDER BY changed DESC;', $this->user->id, $subscription);
 	}
 
+	public function listEpisodes(int $subscription): array
+	{
+		$db = DB::getInstance();
+		return $db->all('SELECT e.*
+			FROM episodes e
+				INNER JOIN subscriptions s ON s.feed = e.feed
+			WHERE s.id = ? AND s.user = ?
+			ORDER BY e.pubdate DESC;', $subscription, $this->user->id);
+	}
+
 	public function updateFeedForSubscription(int $subscription): ?Feed
 	{
 		$db = DB::getInstance();

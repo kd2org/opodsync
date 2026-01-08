@@ -12,10 +12,11 @@ if (!$gpodder->user) {
 $id = intval($_GET['id'] ?? null);
 $feed = $gpodder->getFeedForSubscription($id);
 $actions = $gpodder->listActions($id);
+$episodes = $gpodder->listEpisodes($id);
 
-if (!$feed && !$actions) {
+if (!$feed && !$actions && !$episodes) {
 	throw new UserException('Feed not found or empty');
 }
 
-$tpl->assign(compact('feed', 'actions'));
+$tpl->assign(compact('feed', 'actions', 'episodes'));
 $tpl->display('feed.tpl');
