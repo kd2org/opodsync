@@ -299,9 +299,15 @@ class GPodder
 
 	public function addSubscription(string $url): ?string
 	{
-		$url = trim($url);
+		$url = filter_var($url, FILTER_VALIDATE_URL);
 
-		if (!preg_match('!^https?://[^/]+!', $url)) {
+		if ($url === false) {
+			return 'Invalid URL';
+		}
+
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		if (!in_array($scheme, ['http', 'https'])) {
 			return 'Invalid URL. Must start with http:// or https://';
 		}
 
@@ -322,7 +328,7 @@ class GPodder
 		], ['user', 'url']);
 
 		// Get the subscription ID and fetch feed metadata
-		$subscription = $db->firstRow('SELECT id FROM subscriptions WHERE url = ? AND user = ?;', $url, $this->user->id);
+		$subscription = $db->lastInsertRowID();
 		if ($subscription) {
 			$this->updateFeedForSubscription($subscription->id);
 		}
