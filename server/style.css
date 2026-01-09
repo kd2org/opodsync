@@ -17,7 +17,7 @@ a {
 	color: #005c97;
 }
 
-input[type=text], input[type=password], input[type=number] {
+input[type=text], input[type=password], input[type=number], input[type=url] {
 	border: 1px solid #666;
 	padding: .5em;
 	border-radius: .5em;
@@ -215,6 +215,25 @@ nav ul {
 	gap: 1em;
 	margin: 2em 0;
 	font-size: 1.2em;
+}
+
+input.url {
+	width: 20em;
+	max-width: 60vw;
+}
+
+.inline-form {
+	display: inline;
+	margin: 0;
+	padding: 0;
+}
+
+.btn-danger {
+	background: linear-gradient(to bottom, #c0392b, #e74c3c);
+}
+
+.btn-danger:hover {
+	box-shadow: 0 0 10px #e74c3c;
 }
 
 @media screen and (max-width: 900px) {
