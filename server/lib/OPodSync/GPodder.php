@@ -20,7 +20,7 @@ class GPodder
 		}
 
 		$options = [
-			'secure'   => true,
+			'secure'   => !empty($_SERVER['HTTPS']),
 			'httponly' => true,
 		];
 
