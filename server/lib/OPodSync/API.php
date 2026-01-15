@@ -18,32 +18,7 @@ class API
 
 	public function __construct()
 	{
-		$url = defined(__NAMESPACE__ . '\\BASE_URL') ? BASE_URL : null;
-		$url ??= getenv('BASE_URL', true) ?: null;
-
-		if (!$url) {
-			if (!isset($_SERVER['SERVER_PORT'], $_SERVER['SERVER_NAME'], $_SERVER['SCRIPT_FILENAME'], $_SERVER['DOCUMENT_ROOT'])) {
-				echo "Unable to auto-detect application URL, please set BASE_URL constant or environment variable.\n";
-				exit(1);
-			}
-
-			$url = 'http';
-
-			if (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] === 443) {
-				$url .= 's';
-			}
-
-			$url .= '://' . $_SERVER['SERVER_NAME'];
-
-			if (!in_array($_SERVER['SERVER_PORT'], [80, 443])) {
-				$url .= ':' . $_SERVER['SERVER_PORT'];
-			}
-
-			$path = substr(dirname($_SERVER['SCRIPT_FILENAME']), strlen($_SERVER['DOCUMENT_ROOT']));
-			$path = trim($path, '/');
-			$url .= $path ? '/' . $path . '/' : '/';
-		}
-
+		$url = BASE_URL;
 		$this->base_path = parse_url($url, PHP_URL_PATH) ?? '';
 		$this->base_url = $url;
 	}
