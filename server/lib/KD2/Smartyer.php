@@ -107,6 +107,8 @@ class Smartyer
 	protected array $modifiers = [
 		'nl2br' => 'nl2br',
 		'strip_tags' => 'strip_tags',
+		'rawurlencode' => 'rawurlencode',
+		'json_encode' => 'json_encode',
 		'count' => 'count',
 		'args' 	=> 'sprintf',
 		'const' => 'constant',
@@ -119,6 +121,7 @@ class Smartyer
 		'replace' => [__CLASS__, 'replace'],
 		'regex_replace' => [__CLASS__, 'replaceRegExp'],
 		'date_format' => [__CLASS__, 'dateFormat'],
+		'strftime' => [__CLASS__, 'dateFormat'],
 	];
 
 	/**
@@ -1214,6 +1217,15 @@ class Smartyer
 		return $var;
 	}
 
+	public function validateVariableName(string $var): void
+	{
+		if (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $var)
+			|| $var === 'this'
+			|| substr($var, 0, 1) === '_') {
+			throw new \BadFunctionCallException('Invalid variable name');
+		}
+	}
+
 	/**
 	 * Native default escape modifier
 	 */
@@ -1290,19 +1302,33 @@ class Smartyer
 	 */
 	static public function truncate(string $str, int $length = 80, string $placeholder = '…', bool $strict_cut = false): string
 	{
-		// Don't try to use unicode if the string is not valid UTF-8
-		$u = preg_match('//u', $str) ? 'u' : '';
-
-		// Shorter than $length + 1
-		if (!preg_match('/^.{' . ((int)$length + 1) . '}/s' . $u, $str)) {
-			return $str;
+		if (trim($str) === '') {
+			return '';
 		}
 
-		// Cut at 80 characters
-		$str = preg_replace('/^(.{0,' . (int)$length . '}).*$/s' . $u, '$1', $str);
+		if (function_exists('mb_strlen')) {
+			if (mb_strlen($str) <= $length) {
+				return $str;
+			}
+
+			$str = mb_substr($str, 0, $length);
+		}
+		// Fallback to using regexp
+		else {
+			// Don't try to use unicode if the string is not valid UTF-8
+			$u = preg_match('//u', $str) ? 'u' : '';
+
+			// Shorter than $length + 1
+			if (!preg_match('/^.{' . ((int)$length + 1) . '}/s' . $u, $str)) {
+				return $str;
+			}
+
+			// Cut at 80 characters
+			$str = preg_replace('/^(.{0,' . (int)$length . '}).*$/s' . $u, '$1', $str);
+		}
 
 		if (!$strict_cut) {
-			$cut = preg_replace('/[^\s.,:;!?]*?$/s' . $u, '', $str);
+			$cut = preg_replace('/[^\s.,:;!?]*?$/s', '', $str);
 
 			if (trim($cut) === '') {
 				$cut = $str;
@@ -1368,11 +1394,7 @@ class Smartyer
 
 		$var = $tpl->getValueFromArgument($args['var']);
 
-		if (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $var)
-			|| $var === 'this'
-			|| substr($var, 0, 1) === '_') {
-			throw new \BadFunctionCallException('Invalid variable name in "var" argument to function {assign}');
-		}
+		$tpl->validateVariableName($var);
 
 		// Assign variable to _variables array, even for parent templates
 		$code = '$_t = $this->parent; while ($_t) { $_t->assign(%s, %s); $_t = $_t->parent; } unset($_t); ';
