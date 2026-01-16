@@ -251,6 +251,16 @@ class GPodder
 			ORDER BY changed DESC;', $this->user->id, $subscription);
 	}
 
+	public function listEpisodes(int $subscription): array
+	{
+		$db = DB::getInstance();
+		return $db->all('SELECT e.*
+			FROM episodes e
+				INNER JOIN subscriptions s ON s.feed = e.feed
+			WHERE s.id = ? AND s.user = ?
+			ORDER BY e.pubdate DESC;', $subscription, $this->user->id);
+	}
+
 	public function updateFeedForSubscription(int $subscription): ?Feed
 	{
 		$db = DB::getInstance();
@@ -285,6 +295,53 @@ class GPodder
 		$feed = new Feed($data->feed_url);
 		$feed->load($data);
 		return $feed;
+	}
+
+	public function addSubscription(string $url): ?string
+	{
+		$url = filter_var($url, FILTER_VALIDATE_URL);
+
+		if ($url === false) {
+			return 'Invalid URL';
+		}
+
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		if (!in_array($scheme, ['http', 'https'])) {
+			return 'Invalid URL. Must start with http:// or https://';
+		}
+
+		$db = DB::getInstance();
+
+		// Check if already subscribed
+		$existing = $db->firstRow('SELECT id, deleted FROM subscriptions WHERE url = ? AND user = ?;', $url, $this->user->id);
+
+		if ($existing && !$existing->deleted) {
+			return 'You are already subscribed to this feed.';
+		}
+
+		$db->upsert('subscriptions', [
+			'user'    => $this->user->id,
+			'url'     => $url,
+			'changed' => time(),
+			'deleted' => 0,
+		], ['user', 'url']);
+
+		// Get the subscription ID and fetch feed metadata
+		$subscription = $db->lastInsertRowID();
+		if ($subscription) {
+			$this->updateFeedForSubscription($subscription->id);
+		}
+
+		return null;
+	}
+
+	public function removeSubscription(int $id): bool
+	{
+		$db = DB::getInstance();
+		$db->simple('UPDATE subscriptions SET deleted = 1, changed = ? WHERE id = ? AND user = ?;',
+			time(), $id, $this->user->id);
+		return $db->changes() > 0;
 	}
 
 	public function updateAllFeeds(bool $cli = false): void
