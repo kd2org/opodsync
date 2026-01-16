@@ -1,3 +1,7 @@
+## 0.5.1 (16 Januay 2026)
+
+* Add support for adding new subscriptions from the web UI (thanks [@nebulade](https://github.com/kd2org/opodsync/pull/85))
+
 ## 0.5.0 (11 December 2025)
 
 * Add URL of instance on homepage, with copy button
