@@ -81,7 +81,7 @@ INSERT INTO episodes_actions
 	SELECT a.id, a.user, a.subscription, e.id, d.id, a.url, a.changed, a.action, a.data
 	FROM episodes_actions_old a
 		LEFT JOIN episodes e ON e.media_url = a.url
-		LEFT JOIN devices d ON d.deviceid = json_extract(a.data, '$.device');
+		LEFT JOIN devices d ON d.deviceid = json_extract(a.data, '$.device') AND d.user = a.user;
 
 DROP TABLE episodes_actions_old;
 DROP TABLE devices_old;

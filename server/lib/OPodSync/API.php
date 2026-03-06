@@ -568,7 +568,7 @@ class API
 		$db->exec('BEGIN;');
 
 		$timestamp = time();
-		$st = $db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data) VALUES (:user, :subscription, :url, :changed, :action, :data);');
+		$st = $db->prepare('INSERT INTO episodes_actions (user, subscription, device, url, changed, action, data) VALUES (:user, :subscription, :device, :url, :changed, :action, :data);');
 
 		foreach ($input as $action) {
 			if (!isset($action->podcast, $action->action, $action->episode)) {
@@ -593,13 +593,19 @@ class API
 				$changed = null;
 			}
 
+			$episode = $action->episode;
+			$action_name = strtolower($action->action);
+			unset($action->action, $action->episode, $action->podcast);
+			$data = json_encode($action, JSON_THROW_ON_ERROR);
+			$device = $db->firstColumn('SELECT id FROM devices WHERE deviceid = json_extract(?, \'$.device\') AND user = ?;', $data, $this->user->id);
+
 			$st->bindValue(':user', $this->user->id);
 			$st->bindValue(':subscription', $id);
-			$st->bindValue(':url', $action->episode);
+			$st->bindValue(':device', $device);
+			$st->bindValue(':url', $episode);
 			$st->bindValue(':changed', $changed ?? $timestamp);
-			$st->bindValue(':action', strtolower($action->action));
-			unset($action->action, $action->episode, $action->podcast);
-			$st->bindValue(':data', json_encode($action, JSON_THROW_ON_ERROR));
+			$st->bindValue(':action', $action_name);
+			$st->bindValue(':data', $data);
 			$st->execute();
 			$st->reset();
 			$st->clear();
