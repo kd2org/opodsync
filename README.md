@@ -52,9 +52,10 @@ If you want to allow more accounts, you'll have to configure the server (see "Co
 
 ### Docker
 
-There is an unofficial [Docker image available](https://hub.docker.com/r/ganeshlab/opodsync). Please report any Docker issue [there](https://github.com/ganeshlab/opodsync).
+ * [billznn/opodsync_dckr](https://hub.docker.com/r/billznn/opodsync_dckr): downloads from oPodSync upstream when building the container (not forking) ([Source](https://github.com/mzannoni/opodsync_dckr))
+ * [ganeshlab/opodsync](https://hub.docker.com/r/ganeshlab/opodsync): fork with Dockerfile ([Source](https://github.com/ganeshlab/opodsync))
 
-If this image stops being maintained, see [Docker Hub](https://hub.docker.com/search?q=opodsync) to find other community distribution for Docker.
+If these images stop being maintained, see [Docker Hub](https://hub.docker.com/search?q=opodsync) to find other community distribution for Docker.
 
 **Please don't report Docker issues here, this repository is only for software development.**
 
