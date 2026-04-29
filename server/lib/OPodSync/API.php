@@ -248,6 +248,7 @@ class API
 	public function routeNextCloud(string &$url): bool
 	{
 		$nextcloud_path = 'index.php/apps/gpoddersync/';
+		$r = null;
 
 		if ($url === 'index.php/login/v2') {
 			$this->requireMethod('POST');
@@ -288,7 +289,7 @@ class API
 		}
 
 		if (null !== $r) {
-			echo json_encode($return, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+			echo json_encode($r, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
 			return true;
 		}
 
