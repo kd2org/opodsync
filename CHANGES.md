@@ -1,3 +1,7 @@
+## 0.5.3
+
+* Fix: get around wrong use of NextCloud auth by YourPods client (thanks @kaiwei)
+
 ## 0.5.2
 
 * Fix: error when addin a new subscription (GH-86)
