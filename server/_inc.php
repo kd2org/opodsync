@@ -51,7 +51,19 @@ foreach ($defaults as $const => $value) {
 		continue;
 	}
 
-	define(__NAMESPACE__ . '\\' . $const, getenv($const) ?: $value);
+	$env_value = getenv($const);
+	if ($env_value === false) {
+		$resolved = $value;
+	} else {
+		if (is_bool($value)) {
+			$parsed = filter_var($env_value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+			$resolved = $parsed ?? $value;
+		} else {
+			$resolved = $env_value ?: $value;
+		}
+	}
+
+	define(__NAMESPACE__ . '\\' . $const, $resolved);
 }
 
 if (!defined(__NAMESPACE__ . '\BASE_URL')) {
