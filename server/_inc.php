@@ -12,39 +12,45 @@ spl_autoload_register(function ($class) {
     require_once ROOT . '/lib/' . $class . '.php';
 });
 
-// Enable exception handler in dev mode before we load the config file
 ErrorManager::enable(ErrorManager::DEVELOPMENT);
-
 ErrorManager::setLogFile(ROOT . '/error.log');
 
 class UserException extends \Exception {}
 
 $cfg_file = (getenv('DATA_ROOT') ?: ROOT . '/data') . '/config.local.php';
-
 if (file_exists($cfg_file)) {
 	require $cfg_file;
 }
 
-$data_root = defined(__NAMESPACE__ . '\DATA_ROOT') ? constant(__NAMESPACE__ . '\DATA_ROOT') : (getenv('DATA_ROOT') ?: ROOT . '/data');
+/* Runtime-safe paths */
+$data_root = defined(__NAMESPACE__ . '\DATA_ROOT')
+    ? constant(__NAMESPACE__ . '\DATA_ROOT')
+    : (getenv('DATA_ROOT') ?: ROOT . '/data');
 
-// Default configuration constants
+define(__NAMESPACE__ . '\DATA_ROOT', $data_root);
+define(__NAMESPACE__ . '\CACHE_ROOT', $data_root . '/cache');
+define(__NAMESPACE__ . '\DB_FILE', $data_root . '/data.sqlite');
+
+/* Defaults */
 $defaults = [
-	'ENABLE_SUBSCRIPTIONS'         => false,
-	'ENABLE_SUBSCRIPTION_CAPTCHA'  => true,
+	'ENABLE_SUBSCRIPTIONS' => false,
+	'ENABLE_SUBSCRIPTION_CAPTCHA' => true,
 	'DISABLE_USER_METADATA_UPDATE' => false,
-	'KARADAV_URL'                  => null,
-	'DATA_ROOT'                    => $data_root,
-	'CACHE_ROOT'                   => $data_root . '/cache',
-	'DB_FILE'                      => $data_root . '/data.sqlite',
-	'SQLITE_JOURNAL_MODE'          => 'TRUNCATE',
-	'ERRORS_SHOW'                  => true,
-	'ERRORS_EMAIL'                 => null,
-	'ERRORS_LOG'                   => $data_root . '/error.log',
-	'ERRORS_REPORT_URL'            => null,
-	'TITLE'                        => 'My oPodSync server',
-	'DEBUG_LOG'                    => null,
-	'HTTP_SCHEME'                  => !empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443 ? 'https' : 'http',
-	'TZ'                           => 'Etc/UTC',
+	'KARADAV_URL' => null,
+
+	'DATA_ROOT' => null,
+	'CACHE_ROOT' => null,
+	'DB_FILE' => null,
+
+	'SQLITE_JOURNAL_MODE' => 'TRUNCATE',
+	'ERRORS_SHOW' => true,
+	'ERRORS_EMAIL' => null,
+	'ERRORS_LOG' => $data_root . '/error.log',
+	'ERRORS_REPORT_URL' => null,
+	'TITLE' => 'My oPodSync server',
+	'DEBUG_LOG' => null,
+	'HTTP_SCHEME' => (!empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http',
+	'TZ' => 'Etc/UTC',
 ];
 
 foreach ($defaults as $const => $value) {
@@ -52,32 +58,24 @@ foreach ($defaults as $const => $value) {
 		continue;
 	}
 
-	// Import value from env variable
 	if (getenv($const) !== false) {
-		$value = getenv($const);
+		$env = getenv($const);
 
-		$bool = strtolower($value);
-
-		// Parse bool/null strings properly
-		if ($bool === 'true') {
-			$value = true;
-		}
-		elseif ($bool === 'false') {
-			$value = false;
-		}
-		elseif ($bool === 'null') {
-			$value = null;
-		}
+		if ($env === 'true') $value = true;
+		elseif ($env === 'false') $value = false;
+		elseif ($env === 'null') $value = null;
+		else $value = $env;
 	}
 
 	define(__NAMESPACE__ . '\\' . $const, $value);
 }
 
-// Apply timezone (ENV > config.local.php > default)
-if (defined(__NAMESPACE__ . '\TZ') && TZ) {
+/* timezone */
+if (defined(__NAMESPACE__ . '\TZ') && constant(__NAMESPACE__ . '\TZ')) {
 	date_default_timezone_set(TZ);
 }
 
+/* base URL */
 if (!defined(__NAMESPACE__ . '\BASE_URL')) {
 	$name = $_SERVER['SERVER_NAME'];
 	$port = !in_array($_SERVER['SERVER_PORT'], [80, 443]) ? ':' . $_SERVER['SERVER_PORT'] : '';
@@ -86,34 +84,17 @@ if (!defined(__NAMESPACE__ . '\BASE_URL')) {
 	define(__NAMESPACE__ . '\BASE_URL', sprintf('%s://%s%s%s', HTTP_SCHEME, $name, $port, $root));
 }
 
-if (!ERRORS_SHOW) {
-	ErrorManager::setEnvironment(ErrorManager::PRODUCTION);
-}
-
-if (ERRORS_EMAIL) {
-	ErrorManager::setEmail(ERRORS_EMAIL);
-}
-
-if (ERRORS_LOG) {
-	ErrorManager::setLogFile(ERRORS_LOG);
-}
-elseif (is_writeable(ROOT . 'data/error.log')) {
-	ErrorManager::setLogFile(ROOT . 'data/error.log');
-}
-
-if (ERRORS_REPORT_URL) {
-	ErrorManager::setRemoteReporting(ERRORS_REPORT_URL, true);
-}
+if (!ERRORS_SHOW) ErrorManager::setEnvironment(ErrorManager::PRODUCTION);
+if (ERRORS_EMAIL) ErrorManager::setEmail(ERRORS_EMAIL);
+if (ERRORS_LOG) ErrorManager::setLogFile(ERRORS_LOG);
 
 if (!is_dir(DATA_ROOT)) {
-	if (!@mkdir(DATA_ROOT, fileperms(ROOT), true)) {
-		throw new \RuntimeException('Unable to create directory, please create it and allow this program to write inside: ' . DATA_ROOT);
-	}
+	@mkdir(DATA_ROOT, fileperms(ROOT), true);
 }
 
-// Fix issues with badly configured web servers
 if (!isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
-	@list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+	@list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) =
+		explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
 }
 
 $gpodder = new GPodder;
@@ -128,8 +109,7 @@ $tpl->assign('user', $gpodder->user);
 $tpl->assign('url', BASE_URL);
 $tpl->register_modifier('format_description', [Utils::class, 'format_description']);
 
-
-ErrorManager::setCustomExceptionHandler(__NAMESPACE__. '\\UserException', function ($e) use ($tpl) {
+ErrorManager::setCustomExceptionHandler(__NAMESPACE__ . '\\UserException', function ($e) use ($tpl) {
 	$tpl->assign('message', $e->getMessage());
 	$tpl->display('error.tpl');
 	exit;
