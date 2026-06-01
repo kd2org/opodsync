@@ -328,9 +328,10 @@ class GPodder
 		], ['user', 'url']);
 
 		// Get the subscription ID and fetch feed metadata
-		$subscription = $db->lastInsertRowID();
-		if ($subscription) {
-			$this->updateFeedForSubscription($subscription->id);
+		$subscription_id = $db->lastInsertRowID();
+
+		if ($subscription_id) {
+			$this->updateFeedForSubscription($subscription_id);
 		}
 
 		return null;

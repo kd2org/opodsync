@@ -38,6 +38,8 @@ if (PHP_SAPI === 'cli') {
 	exit(0);
 }
 
+$root = parse_url(BASE_URL, PHP_URL_PATH);
+$uri = substr($uri, strlen($root));
 $uri = trim($uri, '/');
 
 // Return 404 is URI is invalid

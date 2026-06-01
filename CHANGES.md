@@ -1,3 +1,11 @@
+## 0.5.3
+
+* Fix: get around wrong use of NextCloud auth by YourPods client (thanks @kaiwei)
+
+## 0.5.2
+
+* Fix: error when addin a new subscription (GH-86)
+
 ## 0.5.1 (16 Januay 2026)
 
 * Add support for adding new subscriptions from the web UI (thanks [@nebulade](https://github.com/kd2org/opodsync/pull/85))

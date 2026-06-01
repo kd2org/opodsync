@@ -52,7 +52,25 @@ foreach ($defaults as $const => $value) {
 		continue;
 	}
 
-	define(__NAMESPACE__ . '\\' . $const, getenv($const) ?: $value);
+	// Import value from env variable
+	if (getenv($const) !== false) {
+		$value = getenv($const);
+
+		$bool = strtolower($value);
+
+		// Parse bool/null strings properly
+		if ($bool === 'true') {
+			$value = true;
+		}
+		elseif ($bool === 'false') {
+			$value = false;
+		}
+		elseif ($bool === 'null') {
+			$value = null;
+		}
+	}
+
+	define(__NAMESPACE__ . '\\' . $const, $value);
 }
 
 // Apply timezone (ENV > config.local.php > default)
