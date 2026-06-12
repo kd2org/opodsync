@@ -261,7 +261,7 @@ class GPodder
 			ORDER BY e.pubdate DESC;', $subscription, $this->user->id);
 	}
 
-	public function updateFeedForSubscription(int $subscription): ?Feed
+	public function updateFeedForSubscription(int $subscription, ?int $soft_timeout = null): ?Feed
 	{
 		$db = DB::getInstance();
 		$url = $db->firstColumn('SELECT url FROM subscriptions WHERE id = ?;', $subscription);
@@ -272,7 +272,7 @@ class GPodder
 
 		$feed = new Feed($url);
 
-		if (!$feed->fetch()) {
+		if (!$feed->fetch($soft_timeout)) {
 			return null;
 		}
 
@@ -361,8 +361,18 @@ class GPodder
 
 		$db = DB::getInstance();
 
+		// Two time limits per feed. A soft one allowing 30s per feed and failing
+		// gracefully allowing the iteration to continue and a hard one to allow
+		// the process (and the iteration) to completely fail if a feed takes even
+		// longer to respond (for example for an unbounded feed item). This is
+		// necessary because it is not possible to catch the failure from
+		// set_time_limit() thus some feeds after the failure will never get updated.
+		$soft_timeout    = 30;
+		$hard_time_limit = 120;
+
 		foreach ($db->iterate($sql) as $row) {
-			@set_time_limit(30); // Extend running time;
+			// set_time_limit() restarts the timer, so reset the hard limit per feed
+			@set_time_limit($hard_time_limit);
 
 			if ($cli) {
 				printf("Updating %s\n", $row->url);
@@ -373,7 +383,7 @@ class GPodder
 				flush();
 			}
 
-			$this->updateFeedForSubscription($row->subscription);
+			$this->updateFeedForSubscription($row->subscription, $soft_timeout);
 			$i++;
 		}
 

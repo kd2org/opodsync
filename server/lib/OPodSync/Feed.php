@@ -54,7 +54,7 @@ class Feed
 		$db->exec('END');
 	}
 
-	public function fetch(): bool
+	public function fetch(?int $soft_timeout = null): bool
 	{
 		if (function_exists('curl_exec')) {
 			$ch = curl_init($this->feed_url);
@@ -101,7 +101,18 @@ class Feed
 			return false;
 		}
 
+		// Soft time budget for parsing this feed, started after the feed downloads
+		// so we measure parse time, not network wait. This is useful in cases
+		// where this is called in an iteration fetching all feeds - especially
+		// if that iteration has a process fail limit say using set_time_limit()
+		$deadline = $soft_timeout !== null ? microtime(true) + $soft_timeout : null;
+
 		while (preg_match('!<item[^>]*>(.*?)</item>!s', $body, $match)) {
+			if ($deadline !== null && microtime(true) > $deadline) {
+				error_log(sprintf('oPodSync: parsing feed %s exceeded the %ds budget, skipping', $this->feed_url, $soft_timeout));
+				return false;
+			}
+
 			$body = str_replace($match[0], '', $body);
 			$item = $match[1];
 			$pubdate = $this->getTagValue($item, 'pubDate');
