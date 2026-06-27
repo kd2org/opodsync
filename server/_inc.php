@@ -44,6 +44,7 @@ $defaults = [
 	'TITLE'                        => 'My oPodSync server',
 	'DEBUG_LOG'                    => null,
 	'HTTP_SCHEME'                  => !empty($_SERVER['HTTPS']) || $_SERVER['SERVER_PORT'] == 443 ? 'https' : 'http',
+	'DB_QUERY_RUNNING_TIME_LIMIT'  => 30,
 ];
 
 foreach ($defaults as $const => $value) {
