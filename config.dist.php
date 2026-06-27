@@ -158,3 +158,13 @@ const ERRORS_REPORT_URL = null;
  * @var string|null
  */
 const DEBUG_LOG = DATA_ROOT . '/debug.log';
+
+/**
+ * DB_QUERY_RUNNING_TIME_LIMIT
+ * Set the maximum time in seconds a database query is allowed to run.
+ * If a query takes longer than this, it will be aborted and an error will be returned
+ *
+ * Default: 30
+ * @var int
+ */
+const DB_QUERY_RUNNING_TIME_LIMIT = 30;

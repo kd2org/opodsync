@@ -362,7 +362,7 @@ class GPodder
 		$db = DB::getInstance();
 
 		foreach ($db->iterate($sql) as $row) {
-			@set_time_limit(30); // Extend running time;
+			@set_time_limit(DB_QUERY_RUNNING_TIME_LIMIT); // Extend running time;
 
 			if ($cli) {
 				printf("Updating %s\n", $row->url);
