@@ -1,9 +1,12 @@
-## 0.5.4
+## 0.6.0
 
+* New: Add in-browser player that remembers position (thanks @debenore)
+* New: display play progress in list of episodes
+* New: Use relative date for listing last updated feeds
 * Fix issues with feed updates reaching max_execution_time (thanks @MartinCa)
-* Use relative date for listing last updated feeds
 * Fix: durations were wrongly stored when they were in the HH:MM:SS format in feeds
 * Fix: all feeds were always updated, now they're only updated if they have new actions
+* Fix: set timeout for fetching a feed to 5 seconds (should be plenty enough)
 
 ## 0.5.3
 

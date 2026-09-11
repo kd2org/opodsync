@@ -195,6 +195,35 @@ table a {
 	display: block;
 }
 
+table tr.disabled {
+	color: #666;
+}
+
+table tr.disabled progress {
+	opacity: 0.5;
+}
+
+table span.progress {
+	font-size: .9em;
+	display: grid;
+	grid-template-columns: .3fr .3fr .3fr;
+	gap: .5em;
+	align-items: center;
+	justify-content: end;
+	text-align: center;
+}
+
+table span.duration {
+	font-size: .9em;
+	display: block;
+	text-align: right;
+}
+
+table span.progress progress {
+	height: 1em;
+	width: 5em;
+}
+
 .feed img {
 	max-width: 150px;
 }
@@ -240,6 +269,85 @@ input.url {
 
 .btn-danger:hover {
 	box-shadow: 0 0 10px #e74c3c;
+}
+
+/* In-browser episode player */
+.episode-btn {
+	background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="%233498db" viewBox="0 0 24 24"><!-- Icon from Material Symbols by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path d="m9.5 16.5l7-4.5l-7-4.5zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"/></svg>');
+	border: none;
+	cursor: pointer;
+	background-size: contain;
+	text-indent: -70em;
+	overflow: hidden;
+	width: 1.9em;
+	height: 1.9em;
+	padding: 0;
+	vertical-align: middle;
+}
+
+.episode-btn:hover {
+	opacity: 0.7;
+}
+
+#player-bar {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 1em;
+	padding: .6em 1em;
+	background: linear-gradient(to bottom, #2c3e50, #363795);
+	color: #fff;
+	box-shadow: 0 -2px 10px rgba(0, 0, 0, .5);
+}
+
+#player-bar[hidden] {
+	display: none;
+}
+
+#pb-meta {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+#pb-title {
+	font-weight: bold;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#pb-status {
+	color: #ffd;
+	font-size: .85em;
+	margin: 0;
+}
+
+#pb-audio {
+	flex: 2 1 40%;
+	max-width: 55%;
+}
+
+#pb-close {
+	flex: 0 0 auto;
+	background: none;
+	border: none;
+	color: #fff;
+	font-size: 1.4em;
+	line-height: 1;
+	cursor: pointer;
+}
+
+#pb-close:hover {
+	color: #e74c3c;
+}
+
+/* Keep the fixed bar from covering the last rows */
+main {
+	padding-bottom: 6em;
 }
 
 @media screen and (max-width: 900px) {
