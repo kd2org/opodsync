@@ -254,10 +254,12 @@ class GPodder
 	public function listEpisodes(int $subscription): array
 	{
 		$db = DB::getInstance();
-		return $db->all('SELECT e.*
+		return $db->all('SELECT e.*, MAX(a.id), json_extract(a.data, \'$.position\') AS position
 			FROM episodes e
 				INNER JOIN subscriptions s ON s.feed = e.feed
+				LEFT JOIN episodes_actions a ON a.episode = e.id AND a.action = \'play\'
 			WHERE s.id = ? AND s.user = ?
+			GROUP BY e.id
 			ORDER BY e.pubdate DESC;', $subscription, $this->user->id);
 	}
 
@@ -349,7 +351,7 @@ class GPodder
 	{
 		$sql = 'SELECT s.id AS subscription, s.url, MAX(a.changed) AS changed
 			FROM subscriptions s
-				LEFT JOIN episodes_actions a ON a.subscription = s.id
+				LEFT JOIN episodes_actions a ON a.subscription = s.id AND a.action IN (\'download\', \'new\')
 				LEFT JOIN feeds f ON f.id = s.feed
 			WHERE f.last_fetch IS NULL OR f.last_fetch < s.changed OR f.last_fetch < a.changed
 			GROUP BY s.id';
