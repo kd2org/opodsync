@@ -95,18 +95,20 @@ class Feed
 			$body = @file_get_contents($this->feed_url, false, $ctx);
 		}
 
-		$this->last_fetch = time();
-		$db = DB::getInstance();
-		$db->simple('UPDATE feeds SET last_fetch = ? WHERE feed_url = ?;', time(), $this->feed_url);
-
 		if (!$body) {
 			return false;
 		}
+
+		// Only update feed update time, if the server was reached
+		$this->last_fetch = time();
+		$db = DB::getInstance();
+		$db->simple('UPDATE feeds SET last_fetch = ? WHERE feed_url = ?;', time(), $this->feed_url);
 
 		$item_pattern = '!<item[^>]*>(.+?)</item>!s';
 
 		// Not using an XML parser as some feeds are broken :(
 		if (!preg_match_all($item_pattern, $body, $match)) {
+			// Most likely the feed is missing / 404, don't come back unless we have a new action
 			return false;
 		}
 
