@@ -101,9 +101,26 @@ class Feed
 			return false;
 		}
 
-		while (preg_match('!<item[^>]*>(.*?)</item>!s', $body, $match)) {
-			$body = str_replace($match[0], '', $body);
-			$item = $match[1];
+		$item_pattern = '!<item[^>]*>(.+?)</item>!s';
+
+		// Not using an XML parser as some feeds are broken :(
+		if (!preg_match_all($item_pattern, $body, $match)) {
+			return false;
+		}
+
+		// Remove items from body
+		$body = preg_replace($item_pattern, '', $body);
+
+		$this->title = $this->getTagValue($body, 'title');
+
+		if (!$this->title) {
+			return false;
+		}
+
+		$pubdate = $this->getTagValue($body, 'pubDate');
+		$language = $this->getTagValue($body, 'language');
+
+		foreach ($match[1] as $item) {
 			$pubdate = $this->getTagValue($item, 'pubDate');
 			$url = $this->getTagAttribute($item, 'enclosure', 'url');
 
@@ -121,15 +138,6 @@ class Feed
 				'description' => $this->getTagValue($item, 'description') ?? $this->getTagValue($item, 'content:encoded'),
 				'duration'    => $this->getDuration($this->getTagValue($item, 'itunes:duration') ?? $this->getTagAttribute($item, 'enclosure', 'length')),
 			];
-		}
-
-		$pubdate = $this->getTagValue($body, 'pubDate');
-		$language = $this->getTagValue($body, 'language');
-
-		$this->title = $this->getTagValue($body, 'title');
-
-		if (!$this->title) {
-			return false;
 		}
 
 		$this->url = $this->getTagValue($body, 'link');
