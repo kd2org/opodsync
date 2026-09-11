@@ -599,11 +599,11 @@ class API
 				$changed = null;
 			}
 
-			if (!array_key_exists($action->episode, $episodes)) {
+			if (isset($action->episode) && !array_key_exists($action->episode, $episodes)) {
 				$episodes[$action->episode] = $db->firstColumn('SELECT id FROM episodes WHERE media_url = ?;', $action->episode);
 			}
 
-			if (!array_key_exists($action->device, $devices)) {
+			if (isset($action->device) && !array_key_exists($action->device, $devices)) {
 				$devices[$action->device] = $db->firstColumn('SELECT id FROM devices WHERE deviceid = ? AND user = ?;', $action->device, $this->user->id);
 			}
 
@@ -612,8 +612,8 @@ class API
 			$st->bindValue(':url', $action->episode);
 			$st->bindValue(':changed', $changed ?? $timestamp);
 			$st->bindValue(':action', strtolower($action->action));
-			$st->bindValue(':episode', $episodes[$action->episode]);
-			$st->bindValue(':device', $devices[$action->device]);
+			$st->bindValue(':episode', isset($action->episode) ? $episodes[$action->episode] : null);
+			$st->bindValue(':device', isset($action->device) ? $devices[$action->device] : null);
 			unset($action->action, $action->episode, $action->podcast);
 			$st->bindValue(':data', json_encode($action, JSON_THROW_ON_ERROR));
 			$st->execute();

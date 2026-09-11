@@ -34,7 +34,7 @@
 	<fieldset>
 		<legend>Sync URL</legend>
 		<p class="center help">Use this address in your podcast application:</p>
-		<p class="center"><input type="text" class="url" value="{$url}" style="field-sizing: content;" /> <button class="btn sm" onclick="var i = this.parentNode.firstChild; i.select(); document.execCommand('copy');">Copy</button></p>
+		<p class="center"><input type="text" class="url" value="{$url}" style="field-sizing: content;" readonly="readonly" /> <button class="btn sm" onclick="var i = this.parentNode.firstChild; i.select(); document.execCommand('copy'); return false;">Copy</button></p>
 	</fieldset>
 </form>
 
