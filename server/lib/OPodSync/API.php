@@ -572,7 +572,7 @@ class API
 		$db->exec('BEGIN;');
 
 		$timestamp = time();
-		$st = $db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data) VALUES (:user, :subscription, :url, :changed, :action, :data);');
+		$st = $db->prepare('INSERT INTO episodes_actions (user, subscription, url, changed, action, data, episode) VALUES (:user, :subscription, :url, :changed, :action, :data, :episode);');
 
 		foreach ($input as $action) {
 			if (!isset($action->podcast, $action->action, $action->episode)) {
@@ -597,6 +597,8 @@ class API
 				$changed = null;
 			}
 
+			$episode_id = $db->firstColumn('SELECT id FROM episodes WHERE media_url = ?;', $action->episode);
+
 			$st->bindValue(':user', $this->user->id);
 			$st->bindValue(':subscription', $id);
 			$st->bindValue(':url', $action->episode);
@@ -604,6 +606,7 @@ class API
 			$st->bindValue(':action', strtolower($action->action));
 			unset($action->action, $action->episode, $action->podcast);
 			$st->bindValue(':data', json_encode($action, JSON_THROW_ON_ERROR));
+			$st->bindValue(':episode', $episode_id);
 			$st->execute();
 			$st->reset();
 			$st->clear();
