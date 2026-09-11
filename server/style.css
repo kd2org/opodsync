@@ -160,9 +160,9 @@ main h1, main h2, main p {
 }
 
 table {
-	width: 100%;
+	width: calc(100% + 4em);
 	border-collapse: collapse;
-	margin: 1em 0;
+	margin: 1em -2em;
 }
 
 table tbody tr:nth-child(even) {
@@ -172,6 +172,11 @@ table tbody tr:nth-child(even) {
 table th, table td {
 	text-align: left;
 	padding: .5em;
+}
+
+table tbody th {
+	text-overflow: ellipsis;
+	max-width: 300px;
 }
 
 table thead {
@@ -196,6 +201,7 @@ table a {
 
 .feed figure {
 	float: right;
+	margin-left: 1em;
 }
 
 .help {
