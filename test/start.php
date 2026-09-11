@@ -4,9 +4,9 @@ use KD2\Test;
 use KD2\HTTP;
 use KD2\HTMLDocument;
 
-require '../../kd2fw/src/lib/KD2/Test.php';
-require '../../kd2fw/src/lib/KD2/HTTP.php';
-require '../../kd2fw/src/lib/KD2/HTMLDocument.php';
+require __DIR__ . '/../../kd2fw/src/lib/KD2/Test.php';
+require __DIR__ . '/../../kd2fw/src/lib/KD2/HTTP.php';
+require __DIR__ . '/../../kd2fw/src/lib/KD2/HTMLDocument.php';
 
 $server = 'localhost:8099';
 $url = 'http://' . $server;
@@ -49,6 +49,7 @@ natcasesort($list);
 
 try {
 	foreach ($list as $file) {
+		echo "$file\n";
 		require $file;
 	}
 }
