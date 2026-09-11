@@ -243,7 +243,8 @@ class GPodder
 		return $db->all('SELECT a.*,
 				d.name AS device_name,
 				e.title,
-				e.url AS episode_url
+				e.url AS episode_url,
+				json_extract(a.data, \'$.position\') AS position
 			FROM episodes_actions a
 				LEFT JOIN devices d ON d.id = a.device AND a.user = d.user
 				LEFT JOIN episodes e ON e.id = a.episode

@@ -2,6 +2,7 @@
 
 <p class="center">
 	<a href="./subscriptions.php" class="btn sm" aria-label="Go Back">&larr; Back</a>
+	<a href="?id={$id}&amp;actions" class="btn sm">List sync actions</a>
 </p>
 
 {if isset($feed->url, $feed->title, $feed->description)}
@@ -58,35 +59,6 @@
 	</tbody>
 </table>
 {/if}
-
-<h2>Actions</h2>
-<p class="help">Note: episodes titles might be missing because of trackers/ads used by some podcast providers.</p>
-<table>
-	<thead>
-		<tr>
-			<th scope="col">Action</th>
-			<th scope="col">Device</th>
-			<th scope="col">Date</th>
-			<th scope="col">Episode</th>
-		</tr>
-	</thead>
-	<tbody>
-		{foreach from=$actions item="row"}
-			<?php
-			$url = basename(parse_url($row->url, PHP_URL_PATH));
-			$title = $row->title ?? $url;
-			$iso_date = date(DATE_ISO8601, $row->changed);
-			$date = date('d/m/Y H:i', $row->changed);
-			?>
-			<tr>
-				<th scope="row">{$row.action}</th>
-				<td>{$row.device_name}</td>
-				<td><time datetime="{$iso_date}">{$date}</time></td>
-				<td><a href="{$row.url}">{$title}</a></td>
-			</tr>
-		{/foreach}
-	</tbody>
-</table>
 
 <div id="player-bar" hidden>
 	<div id="pb-meta">
