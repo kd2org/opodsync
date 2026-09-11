@@ -60,7 +60,7 @@ class Feed
 			$ch = curl_init($this->feed_url);
 			curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 			curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: oPodSync']);
-			curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 5);
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -81,7 +81,7 @@ class Feed
 					'header'          => 'User-Agent: oPodSync',
 					'max_redirects'   => 5,
 					'follow_location' => true,
-					'timeout'         => 10,
+					'timeout'         => 5,
 					'ignore_errors'   => true,
 				],
 				'ssl'  => [
@@ -96,6 +96,8 @@ class Feed
 		}
 
 		$this->last_fetch = time();
+		$db = DB::getInstance();
+		$db->simple('UPDATE feeds SET last_fetch = ? WHERE feed_url = ?;', time(), $this->feed_url);
 
 		if (!$body) {
 			return false;
@@ -158,7 +160,7 @@ class Feed
 		if (false !== strpos($str, ':') && ctype_digit(str_replace(':', '', trim($str)))) {
 			$parts = explode(':', $str);
 			$parts = array_map('intval', $parts);
-			$duration = ($parts[2] ?? 0) * 3600 + ($parts[1] ?? 0) * 60 + $parts[0] ?? 0;
+			$duration = (($parts[0] ?? 0) * 3600) + (($parts[1] ?? 0) * 60) + ($parts[2] ?? 0);
 		}
 		else {
 			$duration = (int) $str;

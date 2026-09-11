@@ -1,3 +1,10 @@
+## 0.5.4
+
+* Fix issues with feed updates reaching max_execution_time (thanks @MartinCa)
+* Use relative date for listing last updated feeds
+* Fix: durations were wrongly stored when they were in the HH:MM:SS format in feeds
+* Fix: all feeds were always updated, now they're only updated if they have new actions
+
 ## 0.5.3
 
 * Fix: get around wrong use of NextCloud auth by YourPods client (thanks @kaiwei)
