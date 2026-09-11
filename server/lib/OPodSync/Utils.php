@@ -30,7 +30,18 @@ class Utils
 			return '0:00';
 		}
 
-		return ltrim(sprintf('%d:%02d:%02d', floor($duration / 3600), floor(($duration % 3600) / 60), $duration % 60), '0:');
+		$h = floor($duration / 3600);
+		$m = floor(($duration % 3600) / 60);
+		$s = $duration % 60;
+
+		$out = '';
+
+		if ($h) {
+			$out .= $h . ':';
+		}
+
+		$out .= sprintf('%02d:%02d', $m, $s);
+		return $out;
 	}
 
 	static public function relative_date(int $ts): string
