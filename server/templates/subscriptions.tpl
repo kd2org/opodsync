@@ -29,7 +29,7 @@
 <table>
 	<thead>
 		<tr>
-			<th scope="col">Podcast URL</th>
+			<th scope="col">Podcast</th>
 			<th scope="col">Last action</th>
 			<th scope="col">Actions</th>
 			<th scope="col"></th>
@@ -40,12 +40,11 @@
 	{foreach from=$subscriptions item="row"}
 		<?php
 		$iso_date = date(DATE_ISO8601, $row->last_change);
-		$date = date('d/m/Y H:i', $row->last_change);
-		$title = $row->title ?? str_replace(['http://', 'https://'], '', $row->url);
+		$title = $row->title ?? strtr($row->url, ['http://' => '', 'https://' => '', '/' => ' / ']);
 		?>
 		<tr>
 			<th scope="row"><a href="./feed.php?id={$row.id}">{$title}</a></th>
-			<td><time datetime="{$iso_date}">{$date}</time></td>
+			<td><time datetime="{$iso_date}">{$row.last_change|relative_date}</time></td>
 			<td>{$row.count}</td>
 			<td>
 				<form method="post" action="" class="inline-form" onsubmit="return confirm('Unsubscribe from this podcast?');">

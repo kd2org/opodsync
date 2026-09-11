@@ -23,4 +23,25 @@ class Utils
 		$str = nl2br($str);
 		return $str;
 	}
+
+	static public function relative_date(int $ts): string
+	{
+		$diff = (new \DateTime)->diff(new \DateTime('@' . $ts));
+
+		if ($diff->y) {
+			return $diff->y === 1 ? '1 year' : sprintf('%d years', $diff->y);
+		}
+		elseif ($diff->m) {
+			return $diff->m === 1 ? '1 month' : sprintf('%d months', $diff->m);
+		}
+		elseif ($diff->d) {
+			return $diff->d === 1 ? '1 day' : sprintf('%d days', $diff->d);
+		}
+		elseif ($diff->h) {
+			return $diff->h === 1 ? '1 hour' : sprintf('%d hours', $diff->h);
+		}
+		else {
+			return $diff->i <= 1 ? '1 minute' : sprintf('%d minutes', $diff->i);
+		}
+	}
 }
