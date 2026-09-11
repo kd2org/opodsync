@@ -129,6 +129,7 @@ This server has been tested so far with:
 * [Kasts](https://invent.kde.org/multimedia/kasts) 21.08 - Linux/Windows/Android
 * [PinePods](https://github.com/madeofpendletonwool/PinePods) 0.6.1 - WebServer
 * [Music Assistant](https://www.music-assistant.io/music-providers/gpodder/) (according to their documentation)
+* [Rhythmbox](https://gnome.pages.gitlab.gnome.org/rhythmbox/) 3.5.0 - Linux
 
 Please report if apps work (or not) with other clients.
 
