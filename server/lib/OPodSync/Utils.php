@@ -24,6 +24,15 @@ class Utils
 		return $str;
 	}
 
+	static public function format_duration(?int $duration): string
+	{
+		if (!$duration) {
+			return '0:00';
+		}
+
+		return ltrim(sprintf('%d:%02d:%02d', floor($duration / 3600), floor(($duration % 3600) / 60), $duration % 60), '0:');
+	}
+
 	static public function relative_date(int $ts): string
 	{
 		$diff = (new \DateTime)->diff(new \DateTime('@' . $ts));

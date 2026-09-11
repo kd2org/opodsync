@@ -125,6 +125,7 @@ $tpl->assign('can_update_feeds', !DISABLE_USER_METADATA_UPDATE);
 $tpl->assign('user', $gpodder->user);
 $tpl->assign('url', BASE_URL);
 $tpl->register_modifier('format_description', [Utils::class, 'format_description']);
+$tpl->register_modifier('format_duration', [Utils::class, 'format_duration']);
 $tpl->register_modifier('relative_date', [Utils::class, 'relative_date']);
 
 
