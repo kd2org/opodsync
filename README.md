@@ -6,7 +6,7 @@ This is a minimalist podcast synchronization server, for self-hosting your podca
 
 This allows you to keep track of which episodes have been listened to.
 
-Requires PHP 7.4+ and SQLite3 with JSON1 extension.
+Requires PHP 8.0+ and SQLite3 with JSON1 extension.
 
 * Main development happens on Fossil: <https://fossil.kd2.org/opodsync/>
 * Github mirror: <https://github.com/kd2org/opodsync> (PR and issues accepted)
