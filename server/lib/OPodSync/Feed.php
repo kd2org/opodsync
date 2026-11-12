@@ -54,33 +54,118 @@ class Feed
 		$db->exec('END');
 	}
 
-	public function fetch(): bool
+	/**
+	 * True only if the URL's host resolves exclusively to public, globally-routable addresses.
+	 * Fails closed on unresolvable hosts. Used to keep user-supplied feed URLs (and their redirect
+	 * targets) from reaching the server's own loopback/private network or cloud metadata.
+	 */
+	protected static function hostIsPublic(string $url): bool
 	{
-		if (function_exists('curl_exec')) {
-			$ch = curl_init($this->feed_url);
-			curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: oPodSync']);
-			curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-			curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$host = parse_url($url, PHP_URL_HOST);
 
-			$body = @curl_exec($ch);
+		if (!$host) {
+			return false;
+		}
 
-			if (false === $body) {
-				$error = curl_error($ch);
+		$host = trim($host, '[]');
+		$ips = [];
+
+		if (filter_var($host, FILTER_VALIDATE_IP)) {
+			$ips[] = $host;
+		}
+		else {
+			foreach ([DNS_A, DNS_AAAA] as $type) {
+				$records = @dns_get_record($host, $type);
+
+				if (is_array($records)) {
+					foreach ($records as $record) {
+						if (!empty($record['ip'])) {
+							$ips[] = $record['ip'];
+						}
+						if (!empty($record['ipv6'])) {
+							$ips[] = $record['ipv6'];
+						}
+					}
+				}
+			}
+		}
+
+		if (empty($ips)) {
+			return false;
+		}
+
+		foreach ($ips as $ip) {
+			// Normalise IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1) so the private check applies.
+			if (preg_match('/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i', $ip, $m)) {
+				$ip = $m[1];
 			}
 
-			if (PHP_VERSION_ID < 80500) {
-				curl_close($ch);
+			if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+				return false;
+			}
+
+			// CGNAT 100.64.0.0/10 is not covered by FILTER_FLAG_NO_RES_RANGE.
+			if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+				$long = ip2long($ip);
+
+				if ($long !== false && ($long & 0xffc00000) === (ip2long('100.64.0.0') & 0xffc00000)) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	public function fetch(): bool
+	{
+		// SSRF protection: the feed URL is supplied by a user (add subscription), so it must not be
+		// usable to reach loopback/private/reserved addresses, directly or via a redirect.
+		if (!self::hostIsPublic($this->feed_url)) {
+			return false;
+		}
+
+		$body = false;
+
+		if (function_exists('curl_exec')) {
+			// Follow redirects manually so every hop can be re-validated against the host filter.
+			$url = $this->feed_url;
+
+			for ($i = 0; $i < 5; $i++) {
+				if (!self::hostIsPublic($url)) {
+					$body = false;
+					break;
+				}
+
+				$ch = curl_init($url);
+				curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+				curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: oPodSync']);
+				curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+				$body = @curl_exec($ch);
+				$redirect = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+
+				if (PHP_VERSION_ID < 80500) {
+					curl_close($ch);
+				}
+
+				if ($redirect) {
+					$url = $redirect;
+					$body = false;
+					continue;
+				}
+
+				break;
 			}
 		}
 		else {
 			$ctx = stream_context_create([
 				'http' => [
 					'header'          => 'User-Agent: oPodSync',
-					'max_redirects'   => 5,
-					'follow_location' => true,
+					'max_redirects'   => 0,
+					'follow_location' => false,
 					'timeout'         => 5,
 					'ignore_errors'   => true,
 				],
