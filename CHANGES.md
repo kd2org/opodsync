@@ -1,3 +1,7 @@
+## 0.6.1
+
+* Validate user-supplied feed URLs are not SSRF attacks before fetching (thanks @Peter Wilfahrt)
+
 ## 0.6.0
 
 * New: Add in-browser player that remembers position (thanks @debenore)

@@ -20,7 +20,7 @@ class GPodder
 		}
 
 		$options = [
-			'secure'   => HTTP_SCHEME === 'https',
+			'secure'   => str_starts_with(BASE_URL, 'https://'),
 			'httponly' => true,
 		];
 

@@ -2,6 +2,8 @@
 
 namespace OPodSync;
 
+use KD2\HTTP\URL;
+
 class Feed
 {
 	public ?string $feed_url = null;
@@ -56,6 +58,15 @@ class Feed
 
 	public function fetch(): bool
 	{
+		// SSRF protection: the feed URL is supplied by a user (add subscription), so it must not be
+		// usable to reach loopback/private/reserved addresses, directly or via a redirect.
+		try {
+			URL::validateExternalURL($this->feed_url);
+		}
+		catch (\InvalidArgumentException $e) {
+			return false;
+		}
+
 		if (function_exists('curl_exec')) {
 			$ch = curl_init($this->feed_url);
 			curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);

@@ -3,6 +3,7 @@
 namespace OPodSync;
 
 use KD2\ErrorManager;
+use KD2\HTTP\URL;
 use KD2\Smartyer;
 
 const ROOT = __DIR__;
@@ -43,7 +44,6 @@ $defaults = [
 	'ERRORS_REPORT_URL'            => null,
 	'TITLE'                        => 'My oPodSync server',
 	'DEBUG_LOG'                    => null,
-	'HTTP_SCHEME'                  => !empty($_SERVER['HTTPS']) || ($_SERVER['SERVER_PORT'] ?? null) == 443 ? 'https' : 'http',
 ];
 
 foreach ($defaults as $const => $value) {
@@ -77,11 +77,7 @@ if (!defined(__NAMESPACE__ . '\BASE_URL')) {
 		throw new \LogicException('SERVER_NAME is not defined. If running in CLI, please set BASE_URL in config.local.php');
 	}
 
-	$name = $_SERVER['SERVER_NAME'];
-	$port = !in_array($_SERVER['SERVER_PORT'], [80, 443]) ? ':' . $_SERVER['SERVER_PORT'] : '';
-	$root = '/';
-
-	define(__NAMESPACE__ . '\BASE_URL', sprintf('%s://%s%s%s', HTTP_SCHEME, $name, $port, $root));
+	define(__NAMESPACE__ . '\BASE_URL', URL::getAppURL(__DIR__));
 }
 
 if (!ERRORS_SHOW) {
