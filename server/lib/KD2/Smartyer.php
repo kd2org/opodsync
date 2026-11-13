@@ -1187,7 +1187,7 @@ class Smartyer
 	{
 		$i = 0;
 
-		while ($key = array_shift($keys)) {
+		while (null !== ($key = array_shift($keys))) {
 			if ($i++ > 20) {
 				// Limit the amount of recusivity we can go through
 				return null;
@@ -1357,12 +1357,14 @@ class Smartyer
 		if (strpos('DATE_', $format) === 0 && defined($format)) {
 			return date(constant($format), $date);
 		}
-
-		if (method_exists('\KD2\Translate', 'strftime')) {
+		elseif (method_exists('\KD2\Translate', 'strftime')) {
 			return \KD2\Translate::strftime($format, $date);
 		}
 		elseif (function_exists('strftime')) {
 			return @strftime($format, $date);
+		}
+		else {
+			throw new \LogicException('strftime function not found');
 		}
 	}
 

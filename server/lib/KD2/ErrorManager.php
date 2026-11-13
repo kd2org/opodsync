@@ -64,7 +64,7 @@ class ErrorManager
 	 */
 	static protected $production_error_template = '<!DOCTYPE html><html><head><title>Internal server error</title>
 		<style type="text/css">
-		body {font-family: sans-serif; }
+		body {font-family: sans-serif; background: #fff; }
 		code, p, h1 { max-width: 400px; margin: 1em auto; display: block; }
 		code { text-align: right; color: #666; }
 		a { color: blue; }
@@ -77,6 +77,8 @@ class ErrorManager
 		<if(report)><form method="post" action="{$report_url}"><input type="hidden" value="{$report_json}" /><input type="submit" value="Report this error" /></report_form></if>
 		<p><a href="/">&larr; Go back to the homepage</a></p>
 		</body></html>';
+
+	static protected $developer_report_message = '';
 
 	/**
 	 * E-Mail address where to send errors
@@ -222,6 +224,7 @@ class ErrorManager
 			}
 		}
 
+		$log = $report = $html_report = $title = null; // this is for phpstan
 		extract(self::buildExceptionReport($e, false));
 		unset($e);
 
@@ -332,6 +335,7 @@ class ErrorManager
 	static public function reportExceptionSilent(\Throwable $e): string
 	{
 		$report = self::logException($e);
+		$html_report = $log = $title = null; // to avoid warning from phpstan
 		extract($report);
 
 		if (self::$email_errors) {
@@ -421,8 +425,13 @@ class ErrorManager
 	static public function buildExceptionReport(\Throwable $e, bool $force_html = false): array
 	{
 		$report = self::makeReport($e);
-		$log = sprintf('=========== Error ref. %s ===========', $report->context->id)
-			. PHP_EOL . PHP_EOL . (string) $e . PHP_EOL . PHP_EOL
+		$log = sprintf('=========== Error ref. %s ===========', $report->context->id);
+
+		if (!empty($report->context->url)) {
+			$log .= PHP_EOL . PHP_EOL . $report->context->url;
+		}
+
+		$log .= PHP_EOL . PHP_EOL . (string) $e . PHP_EOL . PHP_EOL
 			. '<errorReport>' . PHP_EOL . json_encode($report, \JSON_PRETTY_PRINT)
 			. PHP_EOL . '</errorReport>' . PHP_EOL;
 
@@ -736,6 +745,14 @@ class ErrorManager
 		// Display debug
 		$out .= self::htmlTemplate(ini_get('error_prepend_string'), $report);
 
+		if (!empty($report->context->url)) {
+			$out .= sprintf('<p><tt><a href="%s">%1$s</a></tt></p>', htmlspecialchars($report->context->url));
+		}
+
+		if (self::$developer_report_message) {
+			$out .= '<p>' . self::$developer_report_message . '</p>';
+		}
+
 		foreach ($report->errors as $e)
 		{
 			$out .= self::htmlException($e);
@@ -764,19 +781,21 @@ class ErrorManager
 
 		if ($environment & self::DEVELOPMENT && PHP_SAPI != 'cli') {
 			self::setHtmlHeader('<!DOCTYPE html><meta charset="utf-8" /><style type="text/css">
-			body { font-family: sans-serif; } * { margin: 0; padding: 0; }
+			body { font-family: sans-serif; background: #fff; } * { margin: 0; padding: 0; }
 			u, code b, i, h3 { font-style: normal; font-weight: normal; text-decoration: none; }
 			#icn { color: #fff; font-size: 2em; float: right; margin: 1em; padding: 1em; background: #900; border-radius: 50%; }
 			section header { background: #fdd; padding: 1em; }
 			section article { margin: 1em; }
 			section article h3, section article h4 { font-size: 1em; font-family: mono; }
+			body > p, body > h1 { margin: .5rem; }
 			code { border: 1px dotted #ccc; display: block; }
 			code b { margin-right: 1em; color: #999; }
 			code u { background: #fcc; display: inline-block; width: 100%; }
 			table { border-collapse: collapse; margin: 1em; } td, th { border: 1px solid #ccc; padding: .2em .5em; text-align: left;
 			vertical-align: top; }
 			</style>
-			<pre id="icn"> \__/<br /> (xx)<br />//||\\\\</pre>');
+			<pre id="icn"> \__/<br /> (xx)<br />//||\\\\</pre>
+			<h1>Internal server error</h1>');
 		}
 	}
 
@@ -814,18 +833,20 @@ class ErrorManager
 
 		// Assign default context
 		static $defaults = [
-			'hostname'        => 'SERVER_NAME',
-			'http_user_agent' => 'HTTP_USER_AGENT',
-			'http_referrer'   => 'HTTP_REFERER',
-			'user_addr'       => 'REMOTE_ADDR',
-			'server_addr'     => 'SERVER_ADDR',
-			'root_directory'  => 'DOCUMENT_ROOT',
+			'hostname'              => 'SERVER_NAME',
+			'header:Origin'         => 'HTTP_ORIGIN',
+			'header:Referer'        => 'HTTP_REFERER',
+			'header:Sec-Fetch-Dest' => 'HTTP_SEC_FETCH_DEST',
+			'header:Sec-Fetch-Mode' => 'HTTP_SEC_FETCH_MODE',
+			'header:Sec-Fetch-Site' => 'HTTP_SEC_FETCH_SITE',
+			'header:User-Agent'     => 'HTTP_USER_AGENT',
+			'user_addr'             => 'REMOTE_ADDR',
+			'server_addr'           => 'SERVER_ADDR',
+			'root_directory'        => 'DOCUMENT_ROOT',
 		];
 
 		foreach ($defaults as $a => $b) {
-			if (isset($_SERVER[$b]) && !isset(self::$context[$a])) {
-				self::$context[$a] = $_SERVER[$b];
-			}
+			self::$context[$a] ??= $_SERVER[$b] ?? '';
 		}
 	}
 
@@ -907,6 +928,14 @@ class ErrorManager
 	}
 
 	/**
+	 * Set report context property
+	 */
+	static public function setContextProperty(string $name, $value)
+	{
+		self::$context[$name] = $value;
+	}
+
+	/**
 	 * Enable or disable reporting of errors to a remote URL
 	 * @param null|string $url Reporting URL
 	 * @param boolean $auto Automatic reporting? If not users will be able to report the error by clicking a button on the error page
@@ -945,6 +974,11 @@ class ErrorManager
 	static public function setProductionErrorTemplate($html)
 	{
 		self::$production_error_template = $html;
+	}
+
+	static public function setDeveloperReportMessage(string $message): void
+	{
+		self::$developer_report_message = $message;
 	}
 
 	static public function setCustomExceptionHandler($class, Callable $callback)
@@ -1116,7 +1150,7 @@ class ErrorManager
 	 * @param string|null $log_file Log file to use, if NULL then the log file set in error_log will be used
 	 * @param string|null $filter_id Only return errors matching with this ID
 	 */
-	static public function getReportsFromLog($log_file = null, $filter_id = null)
+	static public function getReportsFromLog($log_file = null, $filter_id = null): array
 	{
 		if (!$log_file)
 		{
